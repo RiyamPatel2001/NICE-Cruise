@@ -61,7 +61,7 @@ class AroEntertainments(models.Model):
 
 class AroInvoice(models.Model):
     invoice_id = models.IntegerField(primary_key=True)
-    booking = models.ForeignKey(AroBooking, models.DO_NOTHING)
+    booking_id = models.ForeignKey(AroBooking, models.DO_NOTHING)
     issue_date = models.DateField()
     due_date = models.DateField()
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -85,7 +85,8 @@ class AroPackages(models.Model):
 
 
 class AroPassenger(models.Model):
-    passenger_id = models.IntegerField(primary_key=True)  # The composite primary key (passenger_id, group_id) found, that is not supported. The first column is selected.
+    id = models.AutoField(primary_key=True)
+    passenger_id = models.IntegerField()
     group_id = models.IntegerField()
     fname = models.CharField(max_length=30)
     lname = models.CharField(max_length=30)
@@ -93,7 +94,7 @@ class AroPassenger(models.Model):
     age = models.IntegerField()
     email = models.CharField(max_length=30)
     phone = models.CharField(max_length=20)
-    address = models.ForeignKey(AroAddress, models.DO_NOTHING)
+    address_id = models.ForeignKey(AroAddress, models.DO_NOTHING)
     nationality = models.CharField(max_length=30)
     room_number = models.ForeignKey('AroRooms', models.DO_NOTHING, db_column='room_number')
 
@@ -106,7 +107,7 @@ class AroPassenger(models.Model):
 
 class AroPayments(models.Model):
     payment_id = models.IntegerField(primary_key=True)
-    invoice = models.ForeignKey(AroInvoice, models.DO_NOTHING)
+    invoice_id= models.ForeignKey(AroInvoice, models.DO_NOTHING)
     trip_id = models.IntegerField()
     payment_date = models.DateField()
     payment_method = models.CharField(max_length=30)
@@ -122,7 +123,7 @@ class AroPayments(models.Model):
 
 class AroPort(models.Model):
     port_id = models.IntegerField(primary_key=True)
-    address = models.OneToOneField(AroAddress, models.DO_NOTHING)
+    address_id = models.OneToOneField(AroAddress, models.DO_NOTHING)
     port_name = models.CharField(max_length=30)
     airport = models.CharField(max_length=30)
     parking_spots = models.IntegerField()
@@ -134,14 +135,18 @@ class AroPort(models.Model):
 
 
 class AroRestaurants(models.Model):
+    YES_NO_CHOICES = [
+        ('Y', 'Yes'),
+        ('N', 'No'),
+    ]
     restaurant_id = models.IntegerField(primary_key=True)
     restaurant_name = models.CharField(max_length=30)
     opening_time = models.TimeField()
     closing_time = models.TimeField()
     floor = models.IntegerField()
-    breakfast = models.CharField(max_length=1)
-    lunch = models.CharField(max_length=1)
-    dinner = models.CharField(max_length=1)
+    breakfast = models.CharField(max_length=1, choices=YES_NO_CHOICES)
+    lunch = models.CharField(max_length=1, choices=YES_NO_CHOICES)
+    dinner = models.CharField(max_length=1, choices=YES_NO_CHOICES)
 
     class Meta:
         managed = False
@@ -181,66 +186,82 @@ class AroTrip(models.Model):
 
 
 class EntertainmentTrip(models.Model):
-    entertainment = models.OneToOneField(AroEntertainments, models.DO_NOTHING, primary_key=True)  # The composite primary key (entertainment_id, trip_id) found, that is not supported. The first column is selected.
-    trip = models.ForeignKey(AroTrip, models.DO_NOTHING)
+    id = models.AutoField(primary_key=True)
+    entertainment_id = models.OneToOneField(AroEntertainments, models.DO_NOTHING)  # The composite primary key (entertainment_id, trip_id) found, that is not supported. The first column is selected.
+    trip_id = models.ForeignKey(AroTrip, models.DO_NOTHING)
 
     class Meta:
         managed = False
         db_table = 'entertainment_trip'
-        unique_together = (('entertainment', 'trip'),)
+        unique_together = (('entertainment_id', 'trip_id'),)
 
 
 class PassengerPackage(models.Model):
-    passenger = models.OneToOneField(AroPassenger, models.DO_NOTHING, primary_key=True)  # The composite primary key (passenger_id, package_id, group_id) found, that is not supported. The first column is selected.
-    package = models.ForeignKey(AroPackages, models.DO_NOTHING)
-    group = models.ForeignKey(AroPassenger, models.DO_NOTHING, to_field='group_id', related_name='passengerpackage_group_set')
+    id = models.AutoField(primary_key=True)
+    package_id = models.ForeignKey(AroPackages, models.DO_NOTHING)
+    group_id = models.IntegerField()
+    passenger_id = models.IntegerField()
 
     class Meta:
         managed = False
         db_table = 'passenger_package'
-        unique_together = (('passenger', 'package', 'group'),)
+        unique_together = (('passenger_id', 'package_id', 'group_id'),)
+
+    @property
+    def passenger(self):
+        try:
+            return AroPassenger.objects.get(passenger_id=self.passenger_id, group_id=self.group_id)
+        except AroPassenger.DoesNotExist:
+            return None
 
 
 class PassengerTrip(models.Model):
-    trip = models.OneToOneField(AroTrip, models.DO_NOTHING, primary_key=True)  # The composite primary key (trip_id, passenger_id, group_id) found, that is not supported. The first column is selected.
-    passenger = models.ForeignKey(AroPassenger, models.DO_NOTHING)
-    group = models.ForeignKey(AroPassenger, models.DO_NOTHING, to_field='group_id', related_name='passengertrip_group_set')
+    id = models.AutoField(primary_key=True)
+    trip_id = models.OneToOneField(AroTrip, on_delete=models.DO_NOTHING)  # The composite primary key (trip_id, passenger_id, group_id) found, that is not supported. The first column is selected.
+    passenger_id = models.IntegerField()
+    group_id = models.IntegerField()
 
     class Meta:
         managed = False
         db_table = 'passenger_trip'
-        unique_together = (('trip', 'passenger', 'group'),)
+        unique_together = (('trip_id', 'passenger_id', 'group_id'),)
+
+    @property
+    def passenger(self):
+        return AroPassenger.objects.get(passenger_id=self.passenger_id, group_id=self.group_id)
 
 
 class RestaurantsTrip(models.Model):
-    restaurant = models.OneToOneField(AroRestaurants, models.DO_NOTHING, primary_key=True)  # The composite primary key (restaurant_id, trip_id) found, that is not supported. The first column is selected.
-    trip = models.ForeignKey(AroTrip, models.DO_NOTHING)
+    id = models.AutoField(primary_key=True)
+    restaurant_id = models.OneToOneField(AroRestaurants, models.DO_NOTHING)  # The composite primary key (restaurant_id, trip_id) found, that is not supported. The first column is selected.
+    trip_id = models.ForeignKey(AroTrip, models.DO_NOTHING)
 
     class Meta:
         managed = False
         db_table = 'restaurants_trip'
-        unique_together = (('restaurant', 'trip'),)
+        unique_together = (('restaurant_id', 'trip_id'),)
 
 
 class RoomTrip(models.Model):
-    room_number = models.OneToOneField(AroRooms, models.DO_NOTHING, db_column='room_number', primary_key=True)  # The composite primary key (room_number, trip_id) found, that is not supported. The first column is selected.
-    trip = models.ForeignKey(AroTrip, models.DO_NOTHING)
+    id = models.AutoField(primary_key=True)
+    room_number = models.OneToOneField(AroRooms, models.DO_NOTHING, db_column='room_number')  # The composite primary key (room_number, trip_id) found, that is not supported. The first column is selected.
+    trip_id = models.ForeignKey(AroTrip, models.DO_NOTHING)
 
     class Meta:
         managed = False
         db_table = 'room_trip'
-        unique_together = (('room_number', 'trip'),)
+        unique_together = (('room_number', 'trip_id'),)
 
 
 class TripPort(models.Model):
-    trip = models.ForeignKey(AroTrip, models.DO_NOTHING)
-    port = models.OneToOneField(AroPort, models.DO_NOTHING, primary_key=True)  # The composite primary key (port_id, trip_id) found, that is not supported. The first column is selected.
-    visit_order = models.IntegerField()
+    id = models.AutoField(primary_key=True)
+    trip_id = models.ForeignKey(AroTrip, models.DO_NOTHING)
+    port_id = models.OneToOneField(AroPort, models.DO_NOTHING) 
     arrival_date = models.DateField()
     departure_date = models.DateField()
 
     class Meta:
         managed = False
         db_table = 'trip_port'
-        unique_together = (('port', 'trip'),)
+        unique_together = (('port_id', 'trip_id'),)
         db_table_comment = 'Trip Port Table'

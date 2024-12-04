@@ -11,3 +11,5 @@ class ItemListView(APIView):
         items = Item.objects.all()
         serializer = ItemSerializer(items, many=True)
         return Response(serializer.data)
+
+    
