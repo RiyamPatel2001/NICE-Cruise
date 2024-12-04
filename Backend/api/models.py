@@ -6,6 +6,7 @@
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.db import models
+from django.contrib.auth.models import User
 
 class Item(models.Model):
     # Define your fields here
@@ -18,7 +19,7 @@ class Item(models.Model):
 
 
 class AroAddress(models.Model):
-    address_id = models.IntegerField(primary_key=True)
+    address_id = models.AutoField(primary_key=True)
     address_type = models.CharField(max_length=10)
     address_line1 = models.CharField(max_length=60)
     address_line2 = models.CharField(max_length=60, blank=True, null=True)
@@ -35,7 +36,7 @@ class AroAddress(models.Model):
 
 
 class AroBooking(models.Model):
-    booking_id = models.IntegerField(primary_key=True)
+    booking_id = models.AutoField(primary_key=True)
     passenger_id = models.IntegerField()
     group_id = models.IntegerField()
     booking_cost = models.DecimalField(max_digits=10, decimal_places=2)
@@ -47,7 +48,7 @@ class AroBooking(models.Model):
 
 
 class AroEntertainments(models.Model):
-    entertainment_id = models.IntegerField(primary_key=True)
+    entertainment_id = models.AutoField(primary_key=True)
     entertainment_name = models.CharField(max_length=30)
     number_units = models.IntegerField()
     age_limit = models.IntegerField()
@@ -60,7 +61,7 @@ class AroEntertainments(models.Model):
 
 
 class AroInvoice(models.Model):
-    invoice_id = models.IntegerField(primary_key=True)
+    invoice_id = models.AutoField(primary_key=True)
     booking_id = models.ForeignKey(AroBooking, models.DO_NOTHING)
     issue_date = models.DateField()
     due_date = models.DateField()
@@ -73,7 +74,7 @@ class AroInvoice(models.Model):
 
 
 class AroPackages(models.Model):
-    package_id = models.IntegerField(primary_key=True)
+    package_id = models.AutoField(primary_key=True)
     package_name = models.CharField(max_length=30)
     package_price = models.DecimalField(max_digits=6, decimal_places=2)
     price_type = models.CharField(max_length=5)
@@ -85,8 +86,7 @@ class AroPackages(models.Model):
 
 
 class AroPassenger(models.Model):
-    id = models.AutoField(primary_key=True)
-    passenger_id = models.IntegerField()
+    passenger_id = models.AutoField(primary_key=True)
     group_id = models.IntegerField()
     fname = models.CharField(max_length=30)
     lname = models.CharField(max_length=30)
@@ -97,6 +97,7 @@ class AroPassenger(models.Model):
     address_id = models.ForeignKey(AroAddress, models.DO_NOTHING)
     nationality = models.CharField(max_length=30)
     room_number = models.ForeignKey('AroRooms', models.DO_NOTHING, db_column='room_number')
+    user_id = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
 
     class Meta:
         managed = False
@@ -106,7 +107,7 @@ class AroPassenger(models.Model):
 
 
 class AroPayments(models.Model):
-    payment_id = models.IntegerField(primary_key=True)
+    payment_id = models.AutoField(primary_key=True)
     invoice_id= models.ForeignKey(AroInvoice, models.DO_NOTHING)
     trip_id = models.IntegerField()
     payment_date = models.DateField()
@@ -122,7 +123,7 @@ class AroPayments(models.Model):
 
 
 class AroPort(models.Model):
-    port_id = models.IntegerField(primary_key=True)
+    port_id = models.AutoField(primary_key=True)
     address_id = models.OneToOneField(AroAddress, models.DO_NOTHING)
     port_name = models.CharField(max_length=30)
     airport = models.CharField(max_length=30)
