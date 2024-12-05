@@ -18,7 +18,8 @@ const rooms = [
 const TotalCost = () => {
   const { state } = useLocation(); // Retrieve state from navigation
   const { selectedCruise, cruisePrice } = state || {};
-  const [numberOfPeople, setNumberOfPeople] = useState(1);
+  const [numberOfGuests, setNumberOfGuests] = useState(1); // Updated to consistent camelCase
+  const [numberOfRooms, setNumberOfRooms] = useState(1); // New state for # of Rooms
   const [selectedPackages, setSelectedPackages] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState("");
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ const TotalCost = () => {
         total + (packages.find((pkg) => pkg.id === pkgId)?.price || 0),
       0
     );
-    return cruisePrice + roomCost * numberOfPeople + packageCost;
+    return cruisePrice + roomCost * numberOfRooms + packageCost;
   };
 
   const handleSubmit = (e) => {
@@ -48,22 +49,22 @@ const TotalCost = () => {
     }
 
     const totalCost = calculateTotal();
-    navigate("/success", {
-      state: { totalCost, numberOfPeople, selectedPackages, selectedRoom },
+    navigate("/guestInformation", {
+      state: { totalCost, numberOfGuests, selectedRoom },
     });
   };
 
   return (
     <div className="total-cost-container">
-      <h1 style={{ textAlign: "center" }}>Total Cost</h1>{" "}
+      <h1 style={{ textAlign: "center" }}>Total Cost</h1>
       <form onSubmit={handleSubmit}>
-        {/* Number of People */}
-        <div className="total-form-group">
-          <label>Number of People:</label>
+        {/* Number of Guests */}
+        <div className="packages-group">
+          <label>Number of Guests:</label>
           <input
             type="number"
-            value={numberOfPeople}
-            onChange={(e) => setNumberOfPeople(Number(e.target.value))}
+            value={numberOfGuests}
+            onChange={(e) => setNumberOfGuests(Number(e.target.value))}
             min="1"
             required
           />
@@ -89,21 +90,34 @@ const TotalCost = () => {
           </div>
         </div>
 
-        {/* Room Type */}
-        <div className="total-form-group">
-          <label>Select Room Type:</label>
-          <select
-            value={selectedRoom}
-            onChange={(e) => setSelectedRoom(e.target.value)}
-            required
-          >
-            <option value="">Select Room Type</option>
-            {rooms.map((room) => (
-              <option key={room.id} value={room.id}>
-                {room.name} - ${room.price}
-              </option>
-            ))}
-          </select>
+        <div className="room-form-row-inline">
+          {/* Room Type */}
+          <div className="total-form-group">
+            <label>Select Room Type:</label>
+            <select
+              value={selectedRoom}
+              onChange={(e) => setSelectedRoom(e.target.value)}
+              required
+            >
+              <option value="">Select Room Type</option>
+              {rooms.map((room) => (
+                <option key={room.id} value={room.id}>
+                  {room.name} - ${room.price}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Number of Rooms */}
+          <div className="total-form-group">
+            <label>Number of Rooms:</label>
+            <input
+              type="number"
+              min="1"
+              value={numberOfRooms}
+              onChange={(e) => setNumberOfRooms(Number(e.target.value))}
+            />
+          </div>
         </div>
 
         {/* Total Cost */}
