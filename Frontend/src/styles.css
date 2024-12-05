@@ -1,0 +1,184 @@
+.App {
+    font-family: sans-serif;
+    text-align: center;
+  }
+  
+  /* SignIn */
+  .signin-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f9f9f9;
+  }
+  
+  .signin-box {
+    width: 400px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  h2 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .form-group {
+    margin-bottom: 15px;
+  }
+  
+  label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 5px;
+    color: #333;
+  }
+  
+  input {
+    width: 90%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .signin-button {
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  
+  .signin-button:hover {
+    background-color: #0056b3;
+  }
+  
+  /* SuccessPage CSS */
+  .success-container {
+    text-align: center;
+    margin-top: 50px;
+  }
+  
+  .success-details {
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    width: 60%;
+    margin: 0 auto;
+  }
+  
+  .booking-summary {
+    margin-top: 20px;
+  }
+  
+  .booking-summary p {
+    font-size: 16px;
+    margin: 10px 0;
+  }
+  
+  ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  ul li {
+    font-size: 14px;
+    margin: 5px 0;
+  }
+  
+  .home-button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .home-button:hover {
+    background-color: #0056b3;
+  }
+  
+  /* Home Page CSS */
+  /* styles.css */
+  
+  /* Header with business name and top border */
+  .header {
+    text-align: center;
+    padding: 20px;
+    border-top: 5px solid #007bff; /* Add a top border */
+    background-color: #f8f9fa; /* Light background color */
+  }
+  
+  .header h1 {
+    font-size: 36px;
+    color: #007bff; /* Blue color for the business name */
+    margin: 0;
+  }
+  
+  /* Other styles for the rest of the page */
+  .home-container {
+    text-align: center;
+    margin-top: 50px;
+  }
+  
+  .form-row {
+    display: flex;
+    justify-content: center;
+    gap: 20px; /* Adjust space between the fields */
+    margin-bottom: 20px;
+  }
+  
+  .form-group {
+    margin: 10px 0;
+  }
+  
+  .form-group input[type="number"],
+  .form-group input[type="date"],
+  .form-group select {
+    padding: 8px;
+    width: 150px; /* Set a consistent width */
+  }
+  
+  .cruise-cards {
+    display: block;
+    margin-top: 30px;
+  }
+  
+  .cruise-card {
+    width: 80%;
+    margin: 10px auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    text-align: left;
+    cursor: pointer;
+    height: 130px;
+    padding-bottom: 30px;
+  }
+  
+  .cruise-card.selected {
+    border-color: #007bff;
+    background-color: #f0f8ff;
+  }
+  
+  .submit-button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .submit-button:hover {
+    background-color: #0056b3;
+  }
+  
