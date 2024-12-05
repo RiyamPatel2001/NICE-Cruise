@@ -134,3 +134,70 @@ class TripPortSerializer(serializers.ModelSerializer):
         model = TripPort
         fields = '__all__' 
 
+
+class DetailedTripSerializer(serializers.ModelSerializer):
+    # Related data for comprehensive trip information
+    available_rooms = serializers.SerializerMethodField()
+    available_packages = serializers.SerializerMethodField()
+    entertainments = serializers.SerializerMethodField()
+    restaurants = serializers.SerializerMethodField()
+    ports = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AroTrip
+        fields = '__all__'  # Include all trip fields
+        extra_fields = [
+            'available_rooms', 
+            'available_packages', 
+            'entertainments', 
+            'restaurants', 
+            'ports'
+        ]
+
+    def get_available_rooms(self, trip):
+        # Optimize room retrieval with select_related
+        room_trips = (
+            RoomTrip.objects.filter(trip_id=trip)
+            .select_related('room')  # Optimize database query
+        )
+        return RoomTripSerializer(room_trips, many=True).data
+
+    def get_available_packages(self, trip):
+        # Get all packages, potentially filter in the future
+        return AroPackagesSerializer(
+            AroPackages.objects.all(), 
+            many=True
+        ).data
+
+    def get_entertainments(self, trip):
+        # Optimize entertainment retrieval
+        entertainment_trips = (
+            EntertainmentTrip.objects.filter(trip_id=trip)
+            .select_related('entertainment_id')
+        )
+        return EntertainmentTripSerializer(
+            entertainment_trips, 
+            many=True
+        ).data
+
+    def get_restaurants(self, trip):
+        # Optimize restaurant retrieval
+        restaurants_trips = (
+            RestaurantsTrip.objects.filter(trip_id=trip)
+            .select_related('restaurant_id')
+        )
+        return RestaurantsTripSerializer(
+            restaurants_trips, 
+            many=True
+        ).data
+
+    def get_ports(self, trip):
+        # Optimize port retrieval
+        trip_ports = (
+            TripPort.objects.filter(trip_id=trip)
+            .select_related('port_id', 'port_id__address_id')
+        )
+        return TripPortSerializer(
+            trip_ports, 
+            many=True
+        ).data
