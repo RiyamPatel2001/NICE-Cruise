@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import SignIn from "./SignIn";
+import SignIn from "./Signin";
 import HomePage from "./HomePage";
 import SuccessPage from "./Success";
 
