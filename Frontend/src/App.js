@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import SignIn from "./Signin";
 import HomePage from "./HomePage";
 import SuccessPage from "./Success";
+import TotalCost from "./TotalCost";
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         {/* Update this to /home */}
         <Route path="/Success" element={<SuccessPage />} />{" "}
         {/* Correct path for SuccessPage */}
+        <Route path="/totalcost" element={<TotalCost />} />{" "}
       </Routes>
     </Router>
   );

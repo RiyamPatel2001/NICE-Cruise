@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import CruiseCard from "./CruiseCard";
 import "./styles.css";
 
-// Mock data for the cruises
 const mockCruises = [
   {
     id: 1,
@@ -10,6 +10,22 @@ const mockCruises = [
     departurePort: "Miami",
     leavingDate: "2024-12-15",
     price: 1500,
+    ports: [
+      { day: 1, location: "Miami, Florida", time: "Departs: 3:00 PM" },
+      { day: 2, location: "At Sea", time: "" },
+      {
+        day: 3,
+        location: "Nassau, Bahamas",
+        time: "Docked: 12:30 PM - 8:00 PM",
+      },
+      {
+        day: 4,
+        location: "Perfect Day at CocoCay",
+        time: "Docked: 7:00 AM - 5:00 PM",
+      },
+      { day: 5, location: "At Sea", time: "" },
+      { day: 6, location: "Miami, Florida", time: "Arrival: 6:00 AM" },
+    ],
   },
   {
     id: 2,
@@ -17,173 +33,119 @@ const mockCruises = [
     departurePort: "Barcelona",
     leavingDate: "2024-12-20",
     price: 1800,
-  },
-  {
-    id: 3,
-    destination: "Alaska",
-    departurePort: "Seattle",
-    leavingDate: "2024-12-25",
-    price: 2000,
+    ports: [
+      { day: 1, location: "Barcelona, Spain", time: "Departs: 5:00 PM" },
+      { day: 2, location: "At Sea", time: "" },
+      { day: 3, location: "Rome, Italy", time: "Docked: 9:00 AM - 6:00 PM" },
+      { day: 4, location: "Naples, Italy", time: "Docked: 7:00 AM - 4:00 PM" },
+      { day: 5, location: "At Sea", time: "" },
+      { day: 6, location: "Barcelona, Spain", time: "Arrival: 7:00 AM" },
+    ],
   },
 ];
 
 const HomePage = () => {
   const [selectedCruise, setSelectedCruise] = useState(null);
-  const [numberOfPeople, setNumberOfPeople] = useState(1);
-  const [numberOfNights, setNumberOfNights] = useState(1); // Added number of nights state
-  const [selectedRoom, setSelectedRoom] = useState(""); // Store room type
-  const [selectedPackages, setSelectedPackages] = useState([]);
-  const [departureDate, setDepartureDate] = useState("");
+  const [expandedCard, setExpandedCard] = useState(null);
+  const [departurePort, setDeparturePort] = useState("");
+  const [arrivalPort, setArrivalPort] = useState("");
+  const [departureDate, setDepartureDate] = useState(""); // Added departureDate state
   const navigate = useNavigate();
 
-  // Handle the cruise selection
-  const handleCruiseSelect = (cruise) => {
-    setSelectedCruise(cruise);
-  };
+  // Filter cruises based on user's input
+  const filteredCruises = mockCruises.filter((cruise) => {
+    const matchesDeparturePort = departurePort
+      ? cruise.departurePort.toLowerCase() === departurePort.toLowerCase()
+      : true;
 
-  // Handle the room selection
-  const handleRoomChange = (e) => {
-    setSelectedRoom(e.target.value);
-  };
+    const matchesArrivalPort = arrivalPort
+      ? cruise.ports.some((port) =>
+          port.location.toLowerCase().includes(arrivalPort.toLowerCase())
+        )
+      : true;
 
-  // Handle the packages selection
-  const handlePackageChange = (e) => {
-    const { value } = e.target;
-    setSelectedPackages((prev) =>
-      prev.includes(value)
-        ? prev.filter((pkg) => pkg !== value)
-        : [...prev, value]
-    );
-  };
+    const matchesDepartureDate = departureDate
+      ? new Date(cruise.leavingDate) >= new Date(departureDate)
+      : true;
 
-  // Handle the form submission and navigate to the next page
+    return matchesDeparturePort && matchesArrivalPort && matchesDepartureDate;
+  });
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (selectedCruise && departureDate && selectedRoom) {
-      const bookingData = {
-        selectedCruise,
-        numberOfPeople,
-        numberOfNights,
-        selectedRoom,
-        selectedPackages,
-        departureDate,
-      };
-      navigate("/success", { state: bookingData });
+    if (selectedCruise) {
+      navigate("/totalCost", {
+        state: { selectedCruise, cruisePrice: selectedCruise.price },
+      });
     } else {
-      alert("Please select a cruise, room type, and fill out all fields.");
+      alert("Please select a cruise before proceeding.");
     }
   };
 
   return (
     <div className="home-container">
-      {/* Header with business name and top border */}
       <header className="header">
         <h1>NICE</h1>
       </header>
 
       <h2>Select Your Cruise</h2>
 
-      {/* Departure Date, Number of People, and Number of Nights side by side */}
-      <div className="form-row">
-        <div className="form-group">
-          <label>Departure Date:</label>
-          <input
-            type="date"
-            value={departureDate}
-            onChange={(e) => setDepartureDate(e.target.value)}
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Number of People:</label>
-          <input
-            type="number"
-            value={numberOfPeople}
-            onChange={(e) => setNumberOfPeople(e.target.value)}
-            min="1"
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Number of Nights:</label>
-          <input
-            type="number"
-            value={numberOfNights}
-            onChange={(e) => setNumberOfNights(e.target.value)}
-            min="1"
-            required
-          />
-        </div>
-      </div>
-
-      {/* Display the cruise cards */}
-      <div className="cruise-cards">
-        {mockCruises.map((cruise) => (
-          <div
-            key={cruise.id}
-            className={`cruise-card ${
-              selectedCruise?.id === cruise.id ? "selected" : ""
-            }`}
-            onClick={() => handleCruiseSelect(cruise)}
-          >
-            <h3>{cruise.destination}</h3>
-            <p>Departure from: {cruise.departurePort}</p>
-            <p>Leaving on: {cruise.leavingDate}</p>
-            <p>Price: ${cruise.price}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Room Type and Package Selection */}
+      {/* Form Section */}
       <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label>Room Type:</label>
-          <select value={selectedRoom} onChange={handleRoomChange} required>
-            <option value="">Select Room Type</option>
-            <option value="Interior">Interior</option>
-            <option value="Oceanview">Oceanview</option>
-            <option value="Balcony">Balcony</option>
-            <option value="Suite">Suite</option>
-          </select>
-        </div>
+        <div className="form-row">
+          {/* Departure Port */}
+          <div className="form-group">
+            <label>Departure Port:</label>
+            <select
+              value={departurePort}
+              onChange={(e) => setDeparturePort(e.target.value)}
+            >
+              <option value="">Any</option>
+              <option value="Miami">Miami</option>
+              <option value="Barcelona">Barcelona</option>
+              <option value="Seattle">Seattle</option>
+            </select>
+          </div>
 
-        <div className="form-group">
-          <label>Select Packages:</label>
-          <div>
+          {/* Arrival Port */}
+          <div className="form-group">
+            <label>Arrival Port:</label>
             <input
-              type="checkbox"
-              value="Spa"
-              onChange={handlePackageChange}
-              checked={selectedPackages.includes("Spa")}
-            />{" "}
-            Spa
+              type="text"
+              placeholder="Search Arrival Port"
+              value={arrivalPort}
+              onChange={(e) => setArrivalPort(e.target.value)}
+            />
           </div>
-          <div>
+
+          {/* Departure Date */}
+          <div className="form-group">
+            <label>Departure Date:</label>
             <input
-              type="checkbox"
-              value="Excursions"
-              onChange={handlePackageChange}
-              checked={selectedPackages.includes("Excursions")}
-            />{" "}
-            Excursions
-          </div>
-          <div>
-            <input
-              type="checkbox"
-              value="Dining"
-              onChange={handlePackageChange}
-              checked={selectedPackages.includes("Dining")}
-            />{" "}
-            Dining
+              type="date"
+              value={departureDate}
+              onChange={(e) => setDepartureDate(e.target.value)}
+            />
           </div>
         </div>
-
         <button type="submit" className="submit-button">
           Proceed to Total Cost
         </button>
       </form>
+
+      {/* Cruise Cards Section */}
+      <div className="cruise-cards">
+        {filteredCruises.map((cruise) => (
+          <CruiseCard
+            key={cruise.id}
+            cruise={cruise}
+            selectedCruise={selectedCruise}
+            setSelectedCruise={setSelectedCruise}
+            expandedCard={expandedCard}
+            setExpandedCard={setExpandedCard}
+          />
+        ))}
+      </div>
     </div>
   );
 };
