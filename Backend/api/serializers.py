@@ -201,3 +201,171 @@ class DetailedTripSerializer(serializers.ModelSerializer):
             trip_ports, 
             many=True
         ).data
+
+# User Registration Serializer
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user registration
+    """
+    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    confirm_password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password', 'confirm_password', 'first_name', 'last_name']
+        extra_kwargs = {
+            'email': {'required': True}
+        }
+
+    def validate(self, data):
+        """
+        Password validation
+        """
+        if data['password'] != data['confirm_password']:
+            raise serializers.ValidationError({"confirm_password": "Passwords do not match"})
+        
+        # Password complexity check
+        if len(data['password']) < 8:
+            raise serializers.ValidationError({"password": "Password must be at least 8 characters long"})
+        
+        return data
+
+    def create(self, validated_data):
+        """
+        Create user with hashed password
+        """
+        validated_data.pop('confirm_password')
+        user = User.objects.create_user(**validated_data)
+        return user
+    
+# Passenger Address Serializer
+class AddressSerializer(serializers.ModelSerializer):
+    """
+    Serializer for passenger address
+    """
+    class Meta:
+        model = AroAddress
+        fields = [
+            'address_line1', 
+            'address_line2', 
+            'city', 
+            'state', 
+            'zip_code', 
+            'country'
+        ]
+
+# Group Passenger Serializer
+class PassengerGroupSerializer(serializers.Serializer):
+    """
+    Serializer for group booking details
+    """
+    total_passengers = serializers.IntegerField(min_value=1)
+    adults = serializers.IntegerField(min_value=0)
+    children = serializers.IntegerField(min_value=0)
+    
+    
+    def validate(self, data):
+        """
+        Validate passenger count
+        """
+        total_passengers = data.get('total_passengers')
+        adults = data.get('adults')
+        children = data.get('children')
+        
+        if total_passengers != (adults + children):
+            raise serializers.ValidationError("Total passengers must equal sum of adults and children")
+        
+        return data
+    
+# Passenger Details Serializer
+class PassengerDetailSerializer(serializers.ModelSerializer):
+    """
+    Serializer for individual passenger details
+    """
+    user_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), 
+        required=False, 
+        allow_null=True
+    )
+    address = AddressSerializer(write_only=True, required=False)
+    room_number = serializers.SlugRelatedField(
+        slug_field='room_number',
+        queryset=AroRooms.objects.all(),
+        required=True
+    )
+
+    class Meta:
+        model = AroPassenger
+        fields = [
+            'group_id',
+            'user_id',
+            'fname', 
+            'lname', 
+            'gender', 
+            'age', 
+            'email', 
+            'phone', 
+            'nationality',
+            'address', 
+            'room_number',
+        ]
+        extra_kwargs = {
+            'address_id': {'write_only': True},  # Hide address_id from output
+            'group_id': {'write_only': True}
+        }
+        
+    
+    def validate_age(self, value):
+        """
+        Validate age for pricing
+        """
+        if value < 0 or value > 120:
+            raise serializers.ValidationError("Invalid age")
+        return value
+
+    def create(self, validated_data):
+        """
+        Custom create method to handle address creation
+        """
+        # Extract address data if provided
+        address_data = validated_data.pop('address', None)
+
+        # Create address if address data is provided
+        if address_data:
+            address = AroAddress.objects.create(**address_data)
+            validated_data['address'] = address
+        else:
+            raise serializers.ValidationError({"address": "Address data is required"})
+
+        # Handle user assignment
+        email = validated_data.get('email')
+        request_user = self.context['request'].user
+        user = None
+
+        # Assign user if the email matches the logged-in user's email
+        if email == request_user.email:
+            user = request_user
+
+        # Assign the User ID to 'user_id'
+        validated_data['user_id'] = user.id if user else None
+
+        
+        # Room number is already converted to an `AroRooms` instance via `SlugRelatedField`
+        return AroPassenger.objects.create(**validated_data)
+
+    def validate(self, data):
+        """
+        Additional validation for passenger data
+        """
+        # Ensure required fields are present
+        required_fields = [
+            'group_id', 'fname', 'lname', 'gender', 
+            'age', 'email', 'phone', 'nationality', 
+            'room_number'
+        ]
+        
+        for field in required_fields:
+            if field not in data:
+                raise serializers.ValidationError(f"{field} is required")
+        
+        return data

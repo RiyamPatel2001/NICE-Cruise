@@ -11,11 +11,15 @@ from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.authentication import TokenAuthentication, SessionAuthentication
 from django.core.cache import cache
 from django.db.models import Prefetch, Q
 from django.utils import timezone
-from django.db import connection
+from django.db import connection, transaction
+import random
+from django.contrib.auth.models import User
+
 
 from .models import (
     Item,
@@ -58,6 +62,9 @@ from .serializers import (
     RoomTripSerializer,
     TripPortSerializer,
     DetailedTripSerializer,
+    UserRegistrationSerializer, 
+    PassengerGroupSerializer, 
+    PassengerDetailSerializer
 )
 
 # Create your views here.
@@ -613,3 +620,160 @@ class DetailedTripViewSet(BaseModelViewSet):
         except Exception as e:
             print(f"Error retrieving ports: {e}")
             return []
+        
+class UserRegistrationView(APIView):
+    """
+    User registration view
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = UserRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({
+                'message': 'User registered successfully',
+                'user_id': user.id,
+                'username': user.username
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class TripBookingViewSet(viewsets.ViewSet):
+    """
+    Comprehensive Trip Booking Process
+    """
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication, SessionAuthentication]
+
+    @action(detail=False, methods=['POST'], url_path='select-trip')
+    def select_trip(self, request):
+        """
+        Select a trip for booking
+        """
+        trip_id = request.data.get('trip_id')
+        try:
+            trip = AroTrip.objects.get(trip_id=trip_id)
+            
+            # Store trip selection in session or temporary storage
+            request.session['selected_trip_id'] = trip_id
+            
+            return Response({
+                'trip_details': {
+                    'trip_id': trip.trip_id,
+                    'ship_name': trip.ship_name,
+                    'start_date': trip.start_date,
+                    'end_date': trip.end_date
+                },
+                'message': 'Trip selected successfully'
+            })
+        except AroTrip.DoesNotExist:
+            return Response({'error': 'Trip not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['POST'], url_path='group-details')
+    def group_details(self, request):
+        """
+        Capture group booking details
+        """
+        serializer = PassengerGroupSerializer(data=request.data)
+        if serializer.is_valid():
+            # Generate unique group ID
+            group_id = self.generate_group_id()
+            
+            # Store group details in session
+            request.session['group_details'] = {
+                'group_id': group_id,
+                **serializer.validated_data
+            }
+            
+            return Response({
+                'group_id': group_id,
+                'message': 'Group details captured successfully'
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['POST'], url_path='add-passengers')
+    def add_passengers(self, request):
+        """
+        Add passengers to the group
+        Handles both registered and unregistered passengers
+        """
+        permission_classes = [IsAuthenticated]
+        authentication_classes = [TokenAuthentication, SessionAuthentication]
+
+        # Retrieve group details from session
+        group_details = request.session.get('group_details')
+        selected_trip_id = request.session.get('selected_trip_id')
+
+        if not group_details or not selected_trip_id:
+            return Response({
+                'error': 'No trip or group selected'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        passengers_data = request.data.get('passengers', [])
+
+        # Validate passenger count matches group details
+        total_expected_passengers = group_details.get('total_passengers', 0)
+        if len(passengers_data) != total_expected_passengers:
+            return Response({
+                'error': f'Expected {total_expected_passengers} passengers, received {len(passengers_data)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate and create passengers
+        created_passengers = []
+        try:
+            with transaction.atomic():
+                trip = AroTrip.objects.get(trip_id=selected_trip_id)
+
+                for passenger_info in passengers_data:
+                    # Add group_id from session
+                    passenger_info['group_id'] = group_details['group_id']
+
+                    # Validate and save passenger
+                    serializer = PassengerDetailSerializer(
+                        data=passenger_info,
+                        context={'request': request}
+                    )
+
+                    if serializer.is_valid():
+                        passenger = serializer.save()
+
+                        # Create PassengerTrip entry
+                        PassengerTrip.objects.create(
+                            trip=trip,
+                            passenger_id=passenger.passenger_id,
+                            group_id=group_details['group_id']
+                        )
+
+                        created_passengers.append({
+                            'passenger_id': passenger.passenger_id,
+                            'user_id': passenger.user_id.id if passenger.user_id else None
+                        })
+                    else:
+                        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            # Clear session data
+            del request.session['group_details']
+            del request.session['selected_trip_id']
+
+            return Response({
+                'message': 'Passengers added successfully',
+                'group_id': group_details['group_id'],
+                'created_passengers': created_passengers
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            # Debugging: Log the exception
+            import traceback
+            print(f"Error in add_passengers: {e}")
+            print(traceback.format_exc())
+
+            return Response({
+                'error': 'An error occurred while adding passengers.',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def generate_group_id(self):
+        """
+        Generate a unique group ID 
+        """
+        return random.randint(10000, 99999)
