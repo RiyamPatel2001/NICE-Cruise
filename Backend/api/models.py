@@ -27,7 +27,7 @@ class AroAddress(models.Model):
     state = models.CharField(max_length=30)
     zip_code = models.CharField(max_length=10)
     country = models.CharField(max_length=30)
-    aro_address_address_id = models.IntegerField()
+
 
     class Meta:
         managed = False
@@ -77,7 +77,8 @@ class AroPackages(models.Model):
     package_id = models.AutoField(primary_key=True)
     package_name = models.CharField(max_length=30)
     package_price = models.DecimalField(max_digits=6, decimal_places=2)
-    price_type = models.CharField(max_length=5)
+    price_type = models.CharField(max_length=10) 
+    description = models.CharField(max_length=255) 
 
     class Meta:
         managed = False
@@ -94,13 +95,13 @@ class AroPassenger(models.Model):
     age = models.IntegerField()
     email = models.CharField(max_length=30)
     phone = models.CharField(max_length=20)
-    address_id = models.ForeignKey(AroAddress, models.DO_NOTHING)
+    address = models.ForeignKey(AroAddress, models.DO_NOTHING, db_column='address_id')
     nationality = models.CharField(max_length=30)
     room_number = models.ForeignKey('AroRooms', models.DO_NOTHING, db_column='room_number')
-    user_id = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, db_column='user_id')
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'aro_passenger'
         unique_together = (('passenger_id', 'group_id'),)
         db_table_comment = 'PRIMARY KEY OF THE PASSENGER TABLE'
@@ -217,15 +218,14 @@ class PassengerPackage(models.Model):
 
 
 class PassengerTrip(models.Model):
-    id = models.AutoField(primary_key=True)
-    trip_id = models.OneToOneField(AroTrip, on_delete=models.DO_NOTHING)  # The composite primary key (trip_id, passenger_id, group_id) found, that is not supported. The first column is selected.
     passenger_id = models.IntegerField()
+    trip = models.ForeignKey(AroTrip, on_delete=models.DO_NOTHING, db_column='trip_id') 
     group_id = models.IntegerField()
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'passenger_trip'
-        unique_together = (('trip_id', 'passenger_id', 'group_id'),)
+        unique_together = (('trip', 'passenger_id', 'group_id'),)
 
     @property
     def passenger(self):
