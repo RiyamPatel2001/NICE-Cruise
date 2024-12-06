@@ -147,6 +147,13 @@ ul li {
 }
 
 /* Packages Section */
+.room-details-grid {
+  font-weight: bold;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 equal columns */
+  gap: 15px; /* Spacing between items */
+  margin-bottom: 20px;
+}
 .packages-group {
   margin-bottom: 15px;
   text-align: center;
@@ -178,19 +185,36 @@ ul li {
   width: 16px;
   height: 16px;
 }
-/* Total Form Group */
+.room-form-row-inline {
+  display: flex;
+  justify-content: space-between; /* Add space between the two inputs */
+  align-items: center; /* Align items vertically */
+  gap: 20px; /* Add spacing between the inputs */
+  margin-bottom: 20px; /* Add spacing below the row */
+}
+
 .total-form-group {
-  margin-bottom: 20px;
-  text-align: center; /* Align labels and inputs to the left */
+  flex: 1; /* Allow equal space for each input */
 }
 
 .total-form-group label {
+  margin-left: 30px;
   display: block;
+  margin-bottom: 8px;
   font-size: 16px;
-  margin-bottom: 5px;
   font-weight: bold;
   color: #333;
 }
+
+.total-form-group select,
+.total-form-group input {
+  width: 100%; /* Ensure inputs take full available width */
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
 /* Total Display Section */
 .total-display {
   margin-top: 20px;
@@ -204,7 +228,7 @@ ul li {
 /* Input and Select Fields */
 .total-form-group input[type="number"],
 .total-form-group select {
-  width: 100%;
+  width: 80%;
   max-width: 400px;
   padding: 8px;
   font-size: 14px;
@@ -290,51 +314,39 @@ ul li {
   margin-bottom: 5px;
   font-size: 14px;
 }
-
 /* Guest Infromation */
 .guest-info-container {
   margin: 20px auto;
   padding: 20px;
-  max-width: 1000px; /* Adjusted for better scaling */
+  max-width: 900px; /* Increased width for better layout */
 }
 
 .guest-form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* Two columns for better spacing */
-  gap: 20px; /* Increased spacing between inputs */
+  grid-template-columns: repeat(2, 1fr); /* Two columns for better alignment */
+  gap: 30px; /* Increased spacing between elements */
+  align-items: center;
   margin-bottom: 30px;
-}
-
-.guest-form-grid label {
-  grid-column: span 2; /* Label spans across all columns */
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 10px;
 }
 
 .guest-form-grid input,
 .guest-form-grid select {
-  width: 80%; /* Ensure inputs take the full width of columns */
-  padding: 12px;
+  padding: 15px; /* Increased padding for a more spacious feel */
   border: 1px solid #ddd;
   border-radius: 5px;
-  font-size: 16px;
+  font-size: 16px; /* Slightly larger font size for readability */
 }
 
-.guest-form-grid select {
-  background-color: #fff;
+.guest-form-grid label {
+  grid-column: span 2; /* Labels span across both columns */
+  font-size: 18px;
+  font-weight: bold;
 }
 
-/* Submit Button */
-.submit-button {
-  padding: 10px 20px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.submit-button:hover {
-  background-color: #0056b3;
+.guest-form-grid h3 {
+  grid-column: span 2; /* Header spans across both columns */
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #007bff; /* Add some color for clarity */
 }

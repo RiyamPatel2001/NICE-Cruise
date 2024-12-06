@@ -17,7 +17,6 @@ const CruiseCard = ({
       <h3>{cruise.destination}</h3>
       <p>Departure from: {cruise.departurePort}</p>
       <p>Leaving on: {cruise.leavingDate}</p>
-      <p>Price: ${cruise.price}</p>
       <button
         type="button"
         onClick={(e) => {

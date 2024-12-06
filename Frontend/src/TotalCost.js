@@ -1,12 +1,6 @@
 import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom"; // Ensure useLocation is imported
 import "./styles.css";
-
-const packages = [
-  { id: "spa", name: "Spa", price: 200 },
-  { id: "excursions", name: "Excursions", price: 150 },
-  { id: "dining", name: "Dining", price: 100 },
-];
 
 const rooms = [
   { id: "interior", name: "Interior Room", price: 500 },
@@ -15,15 +9,30 @@ const rooms = [
   { id: "suite", name: "Suite", price: 1500 },
 ];
 
+const packages = [
+  { id: "spa", name: "Spa", price: 200 },
+  { id: "excursions", name: "Excursions", price: 150 },
+  { id: "dining", name: "Dining", price: 100 },
+];
+
 const TotalCost = () => {
-  const { state } = useLocation(); // Retrieve state from navigation
-  const { selectedCruise, cruisePrice } = state || {};
-  const [numberOfGuests, setNumberOfGuests] = useState(1); // Updated to consistent camelCase
-  const [numberOfRooms, setNumberOfRooms] = useState(1); // New state for # of Rooms
+  const { state } = useLocation(); // Import and use useLocation to retrieve state
+  const { selectedCruise } = state || {}; // Retrieve selected cruise safely
+  const [numberOfRooms, setNumberOfRooms] = useState(1);
+  const [roomsData, setRoomsData] = useState([
+    { type: "", adults: 1, children: 0 },
+  ]); // Store room details
   const [selectedPackages, setSelectedPackages] = useState([]);
-  const [selectedRoom, setSelectedRoom] = useState("");
   const navigate = useNavigate();
 
+  // Dynamically update room data
+  const handleRoomChange = (index, field, value) => {
+    const updatedRooms = [...roomsData];
+    updatedRooms[index] = { ...updatedRooms[index], [field]: value };
+    setRoomsData(updatedRooms);
+  };
+
+  // Handle package selection
   const handlePackageChange = (e) => {
     const { value, checked } = e.target;
     setSelectedPackages((prev) =>
@@ -31,49 +40,124 @@ const TotalCost = () => {
     );
   };
 
-  const calculateTotal = () => {
-    const roomCost = rooms.find((room) => room.id === selectedRoom)?.price || 0;
+  // Calculate total cost
+  const calculateTotalCost = () => {
+    const roomCost = roomsData.reduce(
+      (total, room) =>
+        total + (rooms.find((r) => r.id === room.type)?.price || 0),
+      0
+    );
     const packageCost = selectedPackages.reduce(
       (total, pkgId) =>
         total + (packages.find((pkg) => pkg.id === pkgId)?.price || 0),
       0
     );
-    return cruisePrice + roomCost * numberOfRooms + packageCost;
+    return roomCost + packageCost;
+  };
+
+  // Update number of rooms
+  const handleNumberOfRoomsChange = (e) => {
+    const newNumber = Number(e.target.value);
+    setNumberOfRooms(newNumber);
+    setRoomsData(
+      Array.from(
+        { length: newNumber },
+        (_, i) => roomsData[i] || { type: "", adults: 1, children: 0 }
+      )
+    );
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!selectedRoom) {
-      alert("Please select a room type.");
+
+    // Validate room data
+    const incompleteRooms = roomsData.some(
+      (room) => !room.type || room.adults + room.children > 4
+    );
+    if (incompleteRooms) {
+      alert(
+        "Please assign a valid room type and ensure no more than 4 passengers per room."
+      );
       return;
     }
 
-    const totalCost = calculateTotal();
+    // Navigate to the Guest Information page
     navigate("/guestInformation", {
-      state: { totalCost, numberOfGuests, selectedRoom },
+      state: { roomsData, totalCost: calculateTotalCost(), selectedCruise },
     });
   };
 
   return (
-    <div className="total-cost-container">
-      <h1 style={{ textAlign: "center" }}>Total Cost</h1>
+    <div className="home-container">
+      <header className="header">
+        <h1>NICE</h1>
+      </header>
       <form onSubmit={handleSubmit}>
-        {/* Number of Guests */}
-        <div className="packages-group">
-          <label>Number of Guests:</label>
+        {/* Number of Rooms */}
+        <div className="total-form-group">
+          <label>Number of Rooms:</label>
           <input
             type="number"
-            value={numberOfGuests}
-            onChange={(e) => setNumberOfGuests(Number(e.target.value))}
+            value={numberOfRooms}
             min="1"
+            onChange={handleNumberOfRoomsChange}
             required
           />
         </div>
 
+        {/* Room Details */}
+        {roomsData.map((room, index) => (
+          <div key={index} className="room-section">
+            <h3>Room {index + 1}</h3>
+            <div className="room-details-grid">
+              <div>
+                <label>Room Type:</label>
+                <select
+                  value={room.type}
+                  onChange={(e) =>
+                    handleRoomChange(index, "type", e.target.value)
+                  }
+                  required
+                >
+                  <option value="">Select Room Type</option>
+                  {rooms.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} - ${r.price}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label>Adults:</label>
+                <input
+                  type="number"
+                  value={room.adults}
+                  min="1"
+                  onChange={(e) =>
+                    handleRoomChange(index, "adults", Number(e.target.value))
+                  }
+                  required
+                />
+              </div>
+              <div>
+                <label>Children (0-12):</label>
+                <input
+                  type="number"
+                  value={room.children}
+                  min="0"
+                  onChange={(e) =>
+                    handleRoomChange(index, "children", Number(e.target.value))
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+
         {/* Packages */}
         <div className="packages-group">
           <label>Select Packages:</label>
-          <div className="packages-list">
+          <div className="packages-grid">
             {packages.map((pkg) => (
               <div key={pkg.id} className="package-item">
                 <input
@@ -90,39 +174,9 @@ const TotalCost = () => {
           </div>
         </div>
 
-        <div className="room-form-row-inline">
-          {/* Room Type */}
-          <div className="total-form-group">
-            <label>Select Room Type:</label>
-            <select
-              value={selectedRoom}
-              onChange={(e) => setSelectedRoom(e.target.value)}
-              required
-            >
-              <option value="">Select Room Type</option>
-              {rooms.map((room) => (
-                <option key={room.id} value={room.id}>
-                  {room.name} - ${room.price}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Number of Rooms */}
-          <div className="total-form-group">
-            <label>Number of Rooms:</label>
-            <input
-              type="number"
-              min="1"
-              value={numberOfRooms}
-              onChange={(e) => setNumberOfRooms(Number(e.target.value))}
-            />
-          </div>
-        </div>
-
         {/* Total Cost */}
         <div className="total-display">
-          <strong>Total Cost: ${calculateTotal()}</strong>
+          <strong>Total Cost: ${calculateTotalCost()}</strong>
         </div>
 
         <button type="submit" className="submit-button">

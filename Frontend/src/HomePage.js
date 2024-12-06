@@ -9,7 +9,6 @@ const mockCruises = [
     destination: "Caribbean",
     departurePort: "Miami",
     leavingDate: "2024-12-15",
-    price: 1500,
     ports: [
       { day: 1, location: "Miami, Florida", time: "Departs: 3:00 PM" },
       { day: 2, location: "At Sea", time: "" },
@@ -32,7 +31,6 @@ const mockCruises = [
     destination: "Mediterranean",
     departurePort: "Barcelona",
     leavingDate: "2024-12-20",
-    price: 1800,
     ports: [
       { day: 1, location: "Barcelona, Spain", time: "Departs: 5:00 PM" },
       { day: 2, location: "At Sea", time: "" },
@@ -75,7 +73,7 @@ const HomePage = () => {
     e.preventDefault();
     if (selectedCruise) {
       navigate("/totalCost", {
-        state: { selectedCruise, cruisePrice: selectedCruise.price },
+        state: { selectedCruise },
       });
     } else {
       alert("Please select a cruise before proceeding.");
