@@ -19,6 +19,7 @@ from django.utils import timezone
 from django.db import connection, transaction
 import random
 from django.contrib.auth.models import User
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 from .models import (
@@ -162,22 +163,18 @@ class AroTripViewSet(viewsets.ModelViewSet):
     queryset = AroTrip.objects.all()
     serializer_class = AroTripSerializer
     permission_classes = [AllowAny]  # Adjust as needed
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['start_date', 'start_port', 'end_port']
+    ordering_fields = ['start_date', 'end_date']
+
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
         """
         Optimized queryset with prefetched related data
         Reduces database queries and improves performance
         """
-        # return AroTrip.objects.prefetch_related(
-        #     Prefetch('roomtrip_set', 
-        #         queryset=RoomTrip.objects.select_related('room_number')),
-        #     Prefetch('entertainmenttrip_set', 
-        #         queryset=EntertainmentTrip.objects.select_related('entertainment_id')),
-        #     Prefetch('restaurantstrip_set', 
-        #         queryset=RestaurantsTrip.objects.select_related('restaurant_id')),
-        #     Prefetch('tripport_set', 
-        #         queryset=TripPort.objects.select_related('port_id', 'port_id__address_id'))
-        # )
 
         return AroTrip.objects.all()
 
@@ -491,6 +488,50 @@ class DetailedTripViewSet(BaseModelViewSet):
                 {'error': 'Unable to retrieve trip details'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+    @action(detail=True, methods=['GET'], url_path='rooms')
+    def available_rooms(self, request, pk=None):
+        """
+        Get available rooms for this specific trip
+        """
+        trip = self.get_object()
+        rooms = self.get_available_rooms(trip)
+        return Response(rooms)
+
+    @action(detail=True, methods=['GET'], url_path='packages')
+    def packages(self, request, pk=None):
+        """
+        Get available packages
+        """
+        packages = self.get_available_packages()
+        return Response(packages)
+
+    @action(detail=True, methods=['GET'], url_path='entertainments')
+    def entertainments(self, request, pk=None):
+        """
+        Get entertainments for this specific trip
+        """
+        trip = self.get_object()
+        entertainments = self.get_entertainments(trip)
+        return Response(entertainments)
+
+    @action(detail=True, methods=['GET'], url_path='restaurants')
+    def restaurants(self, request, pk=None):
+        """
+        Get restaurants for this specific trip
+        """
+        trip = self.get_object()
+        restaurants = self.get_restaurants(trip)
+        return Response(restaurants)
+
+    @action(detail=True, methods=['GET'], url_path='ports')
+    def ports(self, request, pk=None):
+        """
+        Get ports for this specific trip
+        """
+        trip = self.get_object()
+        ports = self.get_ports(trip)
+        return Response(ports)
+
 
     def get_available_rooms(self, trip):
         """

@@ -77,7 +77,8 @@ class AroPackages(models.Model):
     package_id = models.AutoField(primary_key=True)
     package_name = models.CharField(max_length=30)
     package_price = models.DecimalField(max_digits=6, decimal_places=2)
-    price_type = models.CharField(max_length=5)
+    price_type = models.CharField(max_length=10) 
+    description = models.CharField(max_length=255) 
 
     class Meta:
         managed = False

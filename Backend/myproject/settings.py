@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'api',
     'rest_framework.authtoken',
     'djoser',
+    'django_filters',
 ]
 
 
@@ -82,9 +83,13 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated'
     ]
+
 }
 
 # Database
