@@ -20,6 +20,13 @@ from django.db import connection, transaction
 import random
 from django.contrib.auth.models import User
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import generics
+from django.contrib.auth import get_user_model, authenticate
+from .serializers import UserSerializer
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.authtoken.models import Token
+from rest_framework.response import Response
+
 
 
 from .models import (
@@ -679,6 +686,18 @@ class UserRegistrationView(APIView):
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+
+class UserLoginView(ObtainAuthToken):
+    def post(self, request, *args, **kwargs):
+        response = super(UserLoginView, self).post(request, *args, **kwargs)
+        token = Token.objects.get(key=response.data['token'])
+        user = token.user
+        return Response({
+            'token': token.key,
+            'user_id': user.id,
+            'email': user.email
+        })
+    
 class TripBookingViewSet(viewsets.ViewSet):
     """
     Comprehensive Trip Booking Process
@@ -818,3 +837,24 @@ class TripBookingViewSet(viewsets.ViewSet):
         Generate a unique group ID 
         """
         return random.randint(10000, 99999)
+
+User = get_user_model()
+
+class RegisterView(generics.CreateAPIView):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = UserSerializer
+
+class LoginView(generics.GenericAPIView):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = UserSerializer  # Create a specific serializer if needed
+
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        password = request.data.get('password')
+
+        user = authenticate(request, username=email, password=password)
+        if user is not None:
+            # Return user data or token
+            return Response({'message': 'Login successful'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)

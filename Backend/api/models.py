@@ -7,6 +7,8 @@
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.db import models
 from django.contrib.auth.models import User
+from django.conf import settings
+
 
 class Item(models.Model):
     # Define your fields here
@@ -266,3 +268,4 @@ class TripPort(models.Model):
         db_table = 'trip_port'
         unique_together = (('port_id', 'trip_id'),)
         db_table_comment = 'Trip Port Table'
+
