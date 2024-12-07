@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CruiseCard from "./CruiseCard";
+import axios from "./api";
 import "./styles.css";
 
 const mockCruises = [
@@ -9,6 +10,7 @@ const mockCruises = [
     destination: "Caribbean",
     departurePort: "Miami",
     leavingDate: "2024-12-15",
+    price: 1500,
     ports: [
       { day: 1, location: "Miami, Florida", time: "Departs: 3:00 PM" },
       { day: 2, location: "At Sea", time: "" },
@@ -31,6 +33,7 @@ const mockCruises = [
     destination: "Mediterranean",
     departurePort: "Barcelona",
     leavingDate: "2024-12-20",
+    price: 1800,
     ports: [
       { day: 1, location: "Barcelona, Spain", time: "Departs: 5:00 PM" },
       { day: 2, location: "At Sea", time: "" },
@@ -43,42 +46,64 @@ const mockCruises = [
 ];
 
 const HomePage = () => {
+  const [trips, setTrips] = useState([]);
   const [selectedCruise, setSelectedCruise] = useState(null);
   const [expandedCard, setExpandedCard] = useState(null);
   const [departurePort, setDeparturePort] = useState("");
   const [arrivalPort, setArrivalPort] = useState("");
-  const [departureDate, setDepartureDate] = useState(""); // Added departureDate state
+  const [departureDate, setDepartureDate] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  // Filter cruises based on user's input
-  const filteredCruises = mockCruises.filter((cruise) => {
-    const matchesDeparturePort = departurePort
-      ? cruise.departurePort.toLowerCase() === departurePort.toLowerCase()
-      : true;
+  useEffect(() => {
+    const fetchTrips = async () => {
+      try {
+        const params = {
+          start_port: departurePort || undefined,
+          end_port: arrivalPort || undefined,
+          start_date: departureDate || undefined,
+        };
+        const response = await axios.get("/api/trips/", { params });
+        setTrips(response.data);
+        console.log(response.data); 
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching trips:", err);
+        setError("Failed to load trips. Please try again later.");
+        setLoading(false);
+      }
+    };
 
-    const matchesArrivalPort = arrivalPort
-      ? cruise.ports.some((port) =>
-          port.location.toLowerCase().includes(arrivalPort.toLowerCase())
-        )
-      : true;
-
-    const matchesDepartureDate = departureDate
-      ? new Date(cruise.leavingDate) >= new Date(departureDate)
-      : true;
-
-    return matchesDeparturePort && matchesArrivalPort && matchesDepartureDate;
-  });
+    fetchTrips();
+  }, [departurePort, arrivalPort, departureDate]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (selectedCruise) {
       navigate("/totalCost", {
-        state: { selectedCruise },
+        state: { selectedCruise, cruisePrice: selectedCruise.price },
       });
     } else {
       alert("Please select a cruise before proceeding.");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="home-container">
+        <p>Loading trips...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="home-container">
+        <p>{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="home-container">
@@ -99,9 +124,14 @@ const HomePage = () => {
               onChange={(e) => setDeparturePort(e.target.value)}
             >
               <option value="">Any</option>
-              <option value="Miami">Miami</option>
-              <option value="Barcelona">Barcelona</option>
-              <option value="Seattle">Seattle</option>
+              {/* List unique departure ports */}
+              {Array.from(new Set(trips.map((trip) => trip.start_port))).map(
+                (port) => (
+                  <option key={port} value={port}>
+                    {port}
+                  </option>
+                )
+              )}
             </select>
           </div>
 
@@ -133,10 +163,10 @@ const HomePage = () => {
 
       {/* Cruise Cards Section */}
       <div className="cruise-cards">
-        {filteredCruises.map((cruise) => (
+        {trips.map((trip) => (
           <CruiseCard
-            key={cruise.id}
-            cruise={cruise}
+            key={trip.trip_id}
+            cruise={trip}
             selectedCruise={selectedCruise}
             setSelectedCruise={setSelectedCruise}
             expandedCard={expandedCard}

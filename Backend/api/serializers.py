@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.contrib.auth.models import User
 from .models import (
     Item, 
     AroAddress,
@@ -19,17 +20,30 @@ from .models import (
     RoomTrip,
     TripPort,
 )
-from django.contrib.auth.models import User
+
 
 class ItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item
         fields = '__all__' 
 
+
 class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True)
+
     class Meta:
         model = User
-        fields = '__all__' 
+        fields = ['id', 'email', 'password']
+        extra_kwargs = {
+            'password': {'write_only': True},
+        }
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            email=validated_data['email'],
+            password=validated_data['password']
+        )
+        return user
 
 class AroAddressSerializer(serializers.ModelSerializer):
     class Meta:
@@ -207,6 +221,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     """
     Serializer for user registration
     """
+    email = serializers.EmailField(required=True)
+    username = serializers.CharField(required=False, write_only=True)
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     confirm_password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
 
@@ -214,7 +230,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = User
         fields = ['username', 'email', 'password', 'confirm_password', 'first_name', 'last_name']
         extra_kwargs = {
-            'email': {'required': True}
+            'email': {'required': True},
+            'username': {'required': False},
+            'first_name': {'required': False},
+            'last_name': {'required': False}
         }
 
     def validate(self, data):
@@ -235,9 +254,20 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         Create user with hashed password
         """
         validated_data.pop('confirm_password')
-        user = User.objects.create_user(**validated_data)
-        return user
-    
+        email = validated_data.get('email')
+        password = validated_data.get('password')
+        first_name = validated_data.get('first_name', '')
+        last_name = validated_data.get('last_name', '')
+
+        # Set the username to the email
+        user = User.objects.create_user(
+            username=email,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name
+        )
+        return user   
 # Passenger Address Serializer
 class AddressSerializer(serializers.ModelSerializer):
     """

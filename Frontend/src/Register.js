@@ -3,14 +3,15 @@ import { useNavigate } from "react-router-dom";
 import axios from "./api";
 import "./styles.css";
 
-const SignIn = () => {
+const Register = () => {
   const [formData, setFormData] = useState({
-    username_or_email: "",
+    email: "",
     password: "",
+    confirm_password: "",
   });
 
   const navigate = useNavigate();
-  const { username_or_email, password } = formData;
+  const { email, password, confirm_password } = formData;
 
   const onChange = (e) =>
     setFormData({ 
@@ -21,63 +22,69 @@ const SignIn = () => {
   const onSubmit = async (e) => {
     e.preventDefault();
 
-    const loginData = {
-      username: username_or_email,
-      password,
-    };
+    if (password !== confirm_password) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    const newUser = { email, password, confirm_password };
 
     try {
-      const res = await axios.post("/api/login/", loginData);
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user_id", res.data.user_id);
-      localStorage.setItem("email", res.data.email);
-
-      alert("Login successful");
-      navigate("/home");
+      await axios.post("/api/register/", newUser);
+      alert("Registration successful");
+      navigate("/signin");
     } catch (err) {
       console.error(err.response?.data || err.message);
-      alert("Error logging in");
+      alert("Error registering user");
     }
   };
 
   return (
     <div className="signin-container">
       <div className="signin-box">
-        <h2>Sign In</h2>
+        <h2>Register</h2>
         <form onSubmit={onSubmit}>
           <div className="form-group">
-            <label>Username or Email:</label>
             <input
-              type="text"
-              name="username_or_email"
-              value={username_or_email}
+              type="email"
+              placeholder="Email"
+              name="email"
+              value={email}
               onChange={onChange}
               required
-              placeholder="Enter your username or email"
             />
           </div>
           <div className="form-group">
-            <label>Password:</label>
             <input
               type="password"
+              placeholder="Password"
               name="password"
               value={password}
               onChange={onChange}
               required
-              placeholder="Enter your password"
+            />
+          </div>
+          <div className="form-group">
+            <input
+              type="password"
+              placeholder="Confirm Password"
+              name="confirm_password"
+              value={confirm_password}
+              onChange={onChange}
+              required
             />
           </div>
           <button type="submit" className="signin-button">
-            Sign In
+            Register
           </button>
         </form>
         <p>
-          Don't have an account? <a href="/register">Register</a>
+          Already have an account? <a href="/signin">Sign In</a>
         </p>
       </div>
     </div>
   );
 };
 
-export default SignIn;
+export default Register;
 
