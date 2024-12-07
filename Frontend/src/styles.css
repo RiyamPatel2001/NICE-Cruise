@@ -122,6 +122,13 @@ ul li {
   margin: 0;
 }
 
+.total-cost-container .header {
+  text-align: center;
+  padding: 20px;
+  border-top: 5px solid #007bff; /* Add a top border */
+  background-color: #f8f9fa;
+}
+
 /* Other styles for the rest of the page */
 .home-container {
   text-align: center;
@@ -167,6 +174,16 @@ ul li {
   display: block;
 }
 
+.nights-input {
+  display: block; /* Ensures it behaves like a block element */
+  margin: 10px auto; /* Centers it horizontally */
+  padding: 8px; /* Adjust padding for better aesthetics */
+  width: 50%; /* Adjust the width to make it smaller */
+  font-size: 14px; /* Adjust font size */
+  border: 1px solid #ddd; /* Standard border */
+  border-radius: 4px; /* Rounded corners for a cleaner look */
+}
+
 .packages-list {
   display: flex;
   flex-direction: column; /* Stack items vertically */
@@ -176,15 +193,17 @@ ul li {
 
 .package-item {
   display: flex;
-  align-items: center; /* Align the checkbox and text */
-  justify-content: center; /* Center align the entire row */
-  gap: 10px; /* Space between checkbox and text */
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 15px;
 }
 
-.package-item input {
-  width: 16px;
-  height: 16px;
+.package-description {
+  margin: 5px 0 0;
+  font-size: 14px;
+  color: #555;
 }
+
 .room-form-row-inline {
   display: flex;
   justify-content: space-between; /* Add space between the two inputs */

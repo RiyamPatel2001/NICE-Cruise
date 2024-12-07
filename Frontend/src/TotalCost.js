@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom"; // Ensure useLocation is imported
+import { useNavigate, useLocation } from "react-router-dom";
 import "./styles.css";
 
 const rooms = [
@@ -10,20 +10,40 @@ const rooms = [
 ];
 
 const packages = [
-  { id: "spa", name: "Spa", price: 200 },
-  { id: "excursions", name: "Excursions", price: 150 },
-  { id: "dining", name: "Dining", price: 100 },
+  {
+    package_id: 1,
+    package_name: "Water and Non-Alcoholic",
+    package_price: 40.0,
+    price_type: "per night",
+    description:
+      "Includes water and non-alcoholic beverages per person per night",
+  },
+  {
+    package_id: 2,
+    package_name: "Excursions",
+    package_price: 150.0,
+    price_type: "per trip",
+    description:
+      "Includes all on-shore excursions for the duration of the trip",
+  },
+  {
+    package_id: 3,
+    package_name: "Spa",
+    package_price: 200.0,
+    price_type: "per trip",
+    description: "Access to the spa facilities for the entire trip",
+  },
 ];
 
 const TotalCost = () => {
-  const { state } = useLocation(); // Import and use useLocation to retrieve state
-  const { selectedCruise } = state || {}; // Retrieve selected cruise safely
   const [numberOfRooms, setNumberOfRooms] = useState(1);
   const [roomsData, setRoomsData] = useState([
     { type: "", adults: 1, children: 0 },
   ]); // Store room details
-  const [selectedPackages, setSelectedPackages] = useState([]);
+  const [selectedPackages, setSelectedPackages] = useState({});
   const navigate = useNavigate();
+  const { state } = useLocation();
+  const { selectedCruise } = state || {}; // Retrieve selected cruise
 
   // Dynamically update room data
   const handleRoomChange = (index, field, value) => {
@@ -32,26 +52,37 @@ const TotalCost = () => {
     setRoomsData(updatedRooms);
   };
 
-  // Handle package selection
-  const handlePackageChange = (e) => {
-    const { value, checked } = e.target;
-    setSelectedPackages((prev) =>
-      checked ? [...prev, value] : prev.filter((pkg) => pkg !== value)
-    );
+  // Handle package selection and nights input
+  const handlePackageChange = (pkgId, field, value) => {
+    setSelectedPackages((prev) => ({
+      ...prev,
+      [pkgId]: {
+        ...prev[pkgId],
+        [field]: field === "checked" ? value : Number(value),
+      },
+    }));
   };
 
   // Calculate total cost
   const calculateTotalCost = () => {
-    const roomCost = roomsData.reduce(
-      (total, room) =>
-        total + (rooms.find((r) => r.id === room.type)?.price || 0),
+    const roomCost = roomsData.reduce((total, room) => {
+      const roomType = rooms.find((r) => r.id === room.type);
+      return total + (roomType?.price || 0);
+    }, 0);
+
+    const packageCost = Object.entries(selectedPackages).reduce(
+      (total, [pkgId, pkgData]) => {
+        const pkg = packages.find((pkg) => pkg.package_id === Number(pkgId));
+        if (!pkg || !pkgData.checked) return total;
+
+        const nights = pkg.price_type === "per night" ? pkgData.nights || 0 : 0;
+        const perTripCost =
+          pkg.price_type === "per trip" ? pkg.package_price : 0;
+        return total + pkg.package_price * nights + perTripCost;
+      },
       0
     );
-    const packageCost = selectedPackages.reduce(
-      (total, pkgId) =>
-        total + (packages.find((pkg) => pkg.id === pkgId)?.price || 0),
-      0
-    );
+
     return roomCost + packageCost;
   };
 
@@ -159,16 +190,42 @@ const TotalCost = () => {
           <label>Select Packages:</label>
           <div className="packages-grid">
             {packages.map((pkg) => (
-              <div key={pkg.id} className="package-item">
+              <div key={pkg.package_id} className="package-item">
+                {/* Checkbox for the Package */}
                 <input
                   type="checkbox"
-                  value={pkg.id}
-                  onChange={handlePackageChange}
-                  checked={selectedPackages.includes(pkg.id)}
+                  onChange={(e) =>
+                    handlePackageChange(
+                      pkg.package_id,
+                      "checked",
+                      e.target.checked
+                    )
+                  }
                 />
+                {/* Package Name, Price, and Description */}
                 <span>
-                  {pkg.name} - ${pkg.price}
+                  <strong>{pkg.package_name}</strong> - ${pkg.package_price} (
+                  {pkg.price_type})
                 </span>
+                <p className="package-description">{pkg.description}</p>
+
+                {/* Conditionally Render Nights Input */}
+                {pkg.price_type === "per night" &&
+                  selectedPackages[pkg.package_id]?.checked && (
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Number of Nights"
+                      className="nights-input"
+                      onChange={(e) =>
+                        handlePackageChange(
+                          pkg.package_id,
+                          "nights",
+                          e.target.value
+                        )
+                      }
+                    />
+                  )}
               </div>
             ))}
           </div>
