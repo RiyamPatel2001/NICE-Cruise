@@ -1,15 +1,13 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import axios from "./api";
 import "./styles.css";
 
 const GuestInformation = () => {
   const { state } = useLocation(); // Retrieve state from TotalCost
-  const { roomsData, totalCost, selectedCruise } = state || {}; // Extract data
+  const { roomsData, totalCost, selectedCruise, group_id, trip_id } = state || {}; // Extract data
 
-  if (!roomsData || roomsData.length === 0) {
-    console.error("roomsData is missing or improperly formatted");
-    return <div>Error: Missing room data</div>;
-  }
+  const navigate = useNavigate();
 
   // Generate initial state for guests
   const [guests, setGuests] = useState(
@@ -21,16 +19,20 @@ const GuestInformation = () => {
         dob: "",
         country: "",
         state: "",
+        city: "",
+        zipCode: "",
+        addressLine1: "",
+        addressLine2: "",
         email: "",
         phone: "",
         id: `Room ${roomIndex + 1} - Guest ${guestIndex + 1}`,
-        roomNumber: roomIndex + 1,
+        roomNumber: room.type, // Assuming room.type contains room number
+        isChild: guestIndex >= room.adults, // To determine if the guest is a child
       }))
     )
   );
 
   const [currentGuestIndex, setCurrentGuestIndex] = useState(0);
-  const navigate = useNavigate();
 
   const handleGuestChange = (id, field, value) => {
     setGuests((prevGuests) =>
@@ -48,7 +50,7 @@ const GuestInformation = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Validation
@@ -60,6 +62,9 @@ const GuestInformation = () => {
         !guest.dob ||
         !guest.country ||
         !guest.state ||
+        !guest.city ||
+        !guest.zipCode ||
+        !guest.addressLine1 ||
         !guest.phone
     );
 
@@ -68,8 +73,66 @@ const GuestInformation = () => {
       return;
     }
 
-    // Navigate to Success Page
-    navigate("/success", { state: { totalCost, guests, selectedCruise } });
+    // Prepare passengers data for backend
+    const passengersData = {
+      group_id: group_id,
+      trip_id: trip_id,
+      passengers: guests.map((guest) => ({
+        fname: guest.firstName,
+        lname: guest.lastName,
+        gender: guest.gender,
+        age: calculateAge(guest.dob),
+        email: guest.email || "",
+        phone: guest.phone,
+        nationality: guest.country,
+        room_number: guest.roomNumber,
+        address: {
+          address_line1: guest.addressLine1,
+          address_line2: guest.addressLine2 || "",
+          city: guest.city,
+          state: guest.state,
+          zip_code: guest.zipCode,
+          country: guest.country,
+        },
+      })),
+    };
+
+    try {
+      // Send passengers data to backend
+      const response = await axios.post(
+        "/api/trip-booking/add-passengers/",
+        passengersData
+      );
+
+      const { group_id } = response.data;
+
+      // Handle backend response if needed
+      console.log("Passengers added successfully:", response.data);
+
+      // Navigate to Success Page
+      navigate("/success", { state: { totalCost, guests, selectedCruise, group_id, trip_id } });
+    } catch (error) {
+      console.error("Error adding passengers:", error.response?.data || error);
+      console.log(passengersData)
+      alert("Failed to add passengers. Please try again.");
+    }
+  };
+
+  // Function to calculate age from date of birth
+  const calculateAge = (dob) => {
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDifference = today.getMonth() - birthDate.getMonth();
+
+    if (
+      monthDifference < 0 ||
+      (monthDifference === 0 && today.getDate() < birthDate.getDate())
+    ) {
+      age--;
+    }
+
+    return age;
   };
 
   return (
@@ -78,6 +141,7 @@ const GuestInformation = () => {
       <form onSubmit={handleSubmit}>
         <div className="guest-form-grid">
           <h3>{guests[currentGuestIndex]?.id}</h3>
+          {/* First Name */}
           <input
             type="text"
             placeholder="First Name"
@@ -91,6 +155,7 @@ const GuestInformation = () => {
             }
             required
           />
+          {/* Last Name */}
           <input
             type="text"
             placeholder="Last Name"
@@ -104,6 +169,7 @@ const GuestInformation = () => {
             }
             required
           />
+          {/* Gender */}
           <select
             value={guests[currentGuestIndex]?.gender}
             onChange={(e) =>
@@ -120,21 +186,19 @@ const GuestInformation = () => {
             <option value="Female">Female</option>
             <option value="Other">Other</option>
           </select>
+          {/* Date of Birth */}
           <input
             type="date"
             value={guests[currentGuestIndex]?.dob}
             onChange={(e) =>
-              handleGuestChange(
-                guests[currentGuestIndex]?.id,
-                "dob",
-                e.target.value
-              )
+              handleGuestChange(guests[currentGuestIndex]?.id, "dob", e.target.value)
             }
             required
           />
+          {/* Country */}
           <input
             type="text"
-            placeholder="Country of Citizenship"
+            placeholder="Country"
             value={guests[currentGuestIndex]?.country}
             onChange={(e) =>
               handleGuestChange(
@@ -145,41 +209,83 @@ const GuestInformation = () => {
             }
             required
           />
+          {/* State */}
           <input
             type="text"
-            placeholder="State/Province of Residency"
+            placeholder="State/Province"
             value={guests[currentGuestIndex]?.state}
+            onChange={(e) =>
+              handleGuestChange(guests[currentGuestIndex]?.id, "state", e.target.value)
+            }
+            required
+          />
+          {/* City */}
+          <input
+            type="text"
+            placeholder="City"
+            value={guests[currentGuestIndex]?.city}
+            onChange={(e) =>
+              handleGuestChange(guests[currentGuestIndex]?.id, "city", e.target.value)
+            }
+            required
+          />
+          {/* Zip Code */}
+          <input
+            type="text"
+            placeholder="Zip Code"
+            value={guests[currentGuestIndex]?.zipCode}
             onChange={(e) =>
               handleGuestChange(
                 guests[currentGuestIndex]?.id,
-                "state",
+                "zipCode",
                 e.target.value
               )
             }
             required
           />
+          {/* Address Line 1 */}
+          <input
+            type="text"
+            placeholder="Address Line 1"
+            value={guests[currentGuestIndex]?.addressLine1}
+            onChange={(e) =>
+              handleGuestChange(
+                guests[currentGuestIndex]?.id,
+                "addressLine1",
+                e.target.value
+              )
+            }
+            required
+          />
+          {/* Address Line 2 */}
+          <input
+            type="text"
+            placeholder="Address Line 2"
+            value={guests[currentGuestIndex]?.addressLine2}
+            onChange={(e) =>
+              handleGuestChange(
+                guests[currentGuestIndex]?.id,
+                "addressLine2",
+                e.target.value
+              )
+            }
+          />
+          {/* Email */}
           <input
             type="email"
             placeholder="Email Address"
             value={guests[currentGuestIndex]?.email}
             onChange={(e) =>
-              handleGuestChange(
-                guests[currentGuestIndex]?.id,
-                "email",
-                e.target.value
-              )
+              handleGuestChange(guests[currentGuestIndex]?.id, "email", e.target.value)
             }
           />
+          {/* Phone */}
           <input
             type="text"
             placeholder="Phone Number"
             value={guests[currentGuestIndex]?.phone}
             onChange={(e) =>
-              handleGuestChange(
-                guests[currentGuestIndex]?.id,
-                "phone",
-                e.target.value
-              )
+              handleGuestChange(guests[currentGuestIndex]?.id, "phone", e.target.value)
             }
             required
           />

@@ -318,6 +318,7 @@ class PassengerDetailSerializer(serializers.ModelSerializer):
         allow_null=True
     )
     address = AddressSerializer(write_only=True, required=False)
+    
     room_number = serializers.SlugRelatedField(
         slug_field='room_number',
         queryset=AroRooms.objects.all(),
@@ -377,7 +378,7 @@ class PassengerDetailSerializer(serializers.ModelSerializer):
             user = request_user
 
         # Assign the User ID to 'user_id'
-        validated_data['user_id'] = user.id if user else None
+        validated_data['user_id'] = user if user else None
 
         
         # Room number is already converted to an `AroRooms` instance via `SlugRelatedField`
@@ -399,3 +400,24 @@ class PassengerDetailSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(f"{field} is required")
         
         return data
+
+
+# class PassengerDetailSerializer(serializers.ModelSerializer):
+#     address = AddressSerializer()
+
+#     class Meta:
+#         model = AroPassenger
+#         fields = [
+#             'passenger_id',
+#             'fname',
+#             'lname',
+#             'gender',
+#             'age',
+#             'email',
+#             'phone',
+#             'nationality',
+#             'room_number',
+#             'address',
+#             'user_id',
+#             'group_id',
+#         ]

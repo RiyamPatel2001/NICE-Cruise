@@ -1,7 +1,15 @@
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import {
+    Box,
+    Button,
+    Container,
+    Paper,
+    TextField,
+    Typography
+} from '@mui/material';
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "./api";
-import "./styles.css";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -40,49 +48,142 @@ const Register = () => {
   };
 
   return (
-    <div className="signin-container">
-      <div className="signin-box">
-        <h2>Register</h2>
-        <form onSubmit={onSubmit}>
-          <div className="form-group">
-            <input
-              type="email"
-              placeholder="Email"
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundImage: `url('/background1.jpg')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      <Container maxWidth="sm">
+        <Paper
+          elevation={8}
+          sx={{
+            p: 4,
+            backgroundColor: 'rgba(255, 255, 255, 0.25)', // More transparent
+            backdropFilter: 'blur(8px)',  // Subtle blur
+            borderRadius: 2,
+            border: '1px solid rgba(255, 255, 255, 0.3)', // Subtle border
+            boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)', // Softer shadow
+            '& .MuiInputBase-root': { // Make input fields semi-transparent
+              backgroundColor: 'rgba(255, 255, 255, 0.4)',
+            },
+            '& .MuiInputLabel-root': { // Ensure labels are visible
+              color: 'rgba(0, 0, 0, 0.7)',
+            },
+            '& .MuiOutlinedInput-root': { // Style input borders
+              '& fieldset': {
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+              },
+              '&:hover fieldset': {
+                borderColor: 'rgba(255, 255, 255, 0.5)',
+              },
+            },
+          }}
+        >
+          <Box
+            component="form"
+            onSubmit={onSubmit}
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 3,
+            }}
+          >
+            <Box sx={{ textAlign: 'center', mb: 2 }}>
+              <PersonAddIcon 
+                sx={{ 
+                  fontSize: 40, 
+                  color: '#1976d2',
+                  mb: 1 
+                }} 
+              />
+              <Typography 
+                variant="h4" 
+                component="h1"
+                sx={{ 
+                  fontWeight: 600,
+                  color: '#1976d2'
+                }}
+              >
+                Register
+              </Typography>
+            </Box>
+
+            <TextField
+              fullWidth
+              label="Email"
               name="email"
+              type="email"
               value={email}
               onChange={onChange}
               required
+              variant="outlined"
             />
-          </div>
-          <div className="form-group">
-            <input
-              type="password"
-              placeholder="Password"
+
+            <TextField
+              fullWidth
+              label="Password"
               name="password"
+              type="password"
               value={password}
               onChange={onChange}
               required
+              variant="outlined"
             />
-          </div>
-          <div className="form-group">
-            <input
-              type="password"
-              placeholder="Confirm Password"
+
+            <TextField
+              fullWidth
+              label="Confirm Password"
               name="confirm_password"
+              type="password"
               value={confirm_password}
               onChange={onChange}
               required
+              variant="outlined"
             />
-          </div>
-          <button type="submit" className="signin-button">
-            Register
-          </button>
-        </form>
-        <p>
-          Already have an account? <a href="/signin">Sign In</a>
-        </p>
-      </div>
-    </div>
+
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              sx={{
+                mt: 2,
+                py: 1.5,
+                backgroundColor: '#1976d2',
+                '&:hover': {
+                  backgroundColor: '#1565c0',
+                },
+              }}
+            >
+              Register
+            </Button>
+
+            <Typography 
+              variant="body1" 
+              align="center"
+              sx={{ mt: 2 }}
+            >
+              Already have an account?{' '}
+              <Link 
+                to="/signin"
+                style={{
+                  color: '#1976d2',
+                  textDecoration: 'none',
+                  fontWeight: 500,
+                }}
+              >
+                Sign In
+              </Link>
+            </Typography>
+          </Box>
+        </Paper>
+      </Container>
+    </Box>
   );
 };
 

@@ -762,10 +762,14 @@ class TripBookingViewSet(viewsets.ViewSet):
         authentication_classes = [TokenAuthentication, SessionAuthentication]
 
         # Retrieve group details from session
-        group_details = request.session.get('group_details')
-        selected_trip_id = request.session.get('selected_trip_id')
+        # group_details = request.session.get('group_details')
+        # print(request.data)
+        group_id = request.data.get('group_id')
+        selected_trip_id = request.data.get('trip_id')
 
-        if not group_details or not selected_trip_id:
+        print(group_id, selected_trip_id)
+
+        if not group_id or not selected_trip_id:
             return Response({
                 'error': 'No trip or group selected'
             }, status=status.HTTP_400_BAD_REQUEST)
@@ -773,11 +777,11 @@ class TripBookingViewSet(viewsets.ViewSet):
         passengers_data = request.data.get('passengers', [])
 
         # Validate passenger count matches group details
-        total_expected_passengers = group_details.get('total_passengers', 0)
-        if len(passengers_data) != total_expected_passengers:
-            return Response({
-                'error': f'Expected {total_expected_passengers} passengers, received {len(passengers_data)}'
-            }, status=status.HTTP_400_BAD_REQUEST)
+        # total_expected_passengers = group_details.get('total_passengers', 0)
+        # if len(passengers_data) != total_expected_passengers:
+        #     return Response({
+        #         'error': f'Expected {total_expected_passengers} passengers, received {len(passengers_data)}'
+        #     }, status=status.HTTP_400_BAD_REQUEST)
 
         # Validate and create passengers
         created_passengers = []
@@ -787,7 +791,7 @@ class TripBookingViewSet(viewsets.ViewSet):
 
                 for passenger_info in passengers_data:
                     # Add group_id from session
-                    passenger_info['group_id'] = group_details['group_id']
+                    passenger_info['group_id'] = group_id
 
                     # Validate and save passenger
                     serializer = PassengerDetailSerializer(
@@ -802,7 +806,7 @@ class TripBookingViewSet(viewsets.ViewSet):
                         PassengerTrip.objects.create(
                             trip=trip,
                             passenger_id=passenger.passenger_id,
-                            group_id=group_details['group_id']
+                            group_id=group_id
                         )
 
                         created_passengers.append({
@@ -813,12 +817,12 @@ class TripBookingViewSet(viewsets.ViewSet):
                         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
             # Clear session data
-            del request.session['group_details']
-            del request.session['selected_trip_id']
+            # del request.session['group_details']
+            # del request.session['selected_trip_id']
 
             return Response({
                 'message': 'Passengers added successfully',
-                'group_id': group_details['group_id'],
+                'group_id': group_id,
                 'created_passengers': created_passengers
             }, status=status.HTTP_201_CREATED)
 
@@ -859,3 +863,27 @@ class LoginView(generics.GenericAPIView):
             return Response({'message': 'Login successful'}, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+    
+
+class PassengerViewSet(viewsets.ViewSet):
+    """
+    A simple ViewSet for listing or retrieving passengers.
+    """
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+
+    @action(detail=False, methods=['GET'], url_path='by-group')
+    def by_group(self, request):
+        """
+        Retrieve passengers by group_id.
+        """
+        group_id = request.query_params.get('group_id')
+        if not group_id:
+            return Response({'error': 'Group ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        passengers = AroPassenger.objects.filter(group_id=group_id)
+        serializer = PassengerDetailSerializer(passengers, many=True)
+        return Response({'passengers': serializer.data}, status=status.HTTP_200_OK)
+
+

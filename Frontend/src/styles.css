@@ -60,8 +60,12 @@ input {
 
 /* SuccessPage CSS */
 .success-container {
-  text-align: center;
-  margin-top: 50px;
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 20px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .success-details {
@@ -72,6 +76,70 @@ input {
   width: 60%;
   margin: 0 auto;
 }
+
+.cruise-info,
+.guests-info,
+.total-cost {
+  margin: 20px 0;
+}
+
+.cruise-info h2,
+.guests-info h2,
+.total-cost h2 {
+  font-size: 24px;
+  color: #37474f;
+  border-bottom: 2px solid #1976d2;
+  padding-bottom: 10px;
+}
+
+.cruise-info p,
+.guests-info p,
+.total-cost p {
+  font-size: 16px;
+  color: #424242;
+  line-height: 1.5;
+  margin: 8px 0;
+}
+
+.guest-card {
+  background-color: #e3f2fd;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  border-left: 4px solid #1976d2;
+}
+
+.guest-card h3 {
+  margin-top: 0;
+  color: #1976d2;
+}
+
+.total-cost p strong {
+  font-size: 28px;
+  color: #d32f2f;
+}
+
+@media (max-width: 600px) {
+  .success-container {
+    padding: 15px;
+  }
+
+  .header h1 {
+    font-size: 28px;
+  }
+
+  .cruise-info h2,
+  .guests-info h2,
+  .total-cost h2 {
+    font-size: 20px;
+  }
+
+  .guest-card {
+    padding: 10px;
+  }
+}
+
+
 
 .booking-summary {
   margin-top: 20px;
@@ -291,6 +359,9 @@ ul li {
 
 .submit-button:hover {
   background-color: #0056b3;
+  transform: scale(1.05);
+  transition: all 0.3s ease-in-out;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Cruise Cards */
@@ -411,4 +482,263 @@ ul li {
 .cruise-name {
   font-family: 'Playfair Display', serif;
   font-size: 24px;
+}
+
+/* Trip Info */
+.trip-info {
+  margin-bottom: 20px;
+}
+
+.trip-info p {
+  font-size: 18px;
+  margin: 10px 0;
+}
+
+.trip-info h2 {
+  margin-bottom: 10px;
+}
+
+/* Ports, Entertainments, Restaurants */
+.ports-info,
+.entertainments-info,
+.restaurants-info {
+  margin-bottom: 20px;
+}
+
+.ports-info h3,
+.entertainments-info h3,
+.restaurants-info h3 {
+  margin-bottom: 10px;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+ul li {
+  margin-bottom: 10px;
+}
+
+.port-item {
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.port-item strong {
+  display: block;
+  font-size: 20px;
+  margin-bottom: 5px;
+}
+
+.port-item address {
+  font-style: normal;
+  color: #555;
+}
+
+/* Entertainments */
+.entertainment-item {
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.entertainment-item strong {
+  font-size: 20px;
+  color: #333;
+}
+
+/* Restaurants */
+.restaurant-item {
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.restaurant-item strong {
+  font-size: 20px;
+  color: #333;
+}
+
+.restaurant-item p {
+  margin: 5px 0;
+  color: #555;
+}
+
+/* Booking Form */
+.booking-form {
+  margin-top: 40px;
+}
+
+.form-group {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.form-group label {
+  display: block;
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.form-group input {
+  width: 50%;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.room-details {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  color: #000;
+}
+
+.room-fields {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+}
+
+.form-field {
+  margin: 10px;
+  flex: 1 1 200px;
+}
+
+.form-field label {
+  display: block;
+  font-size: 18px;
+  margin-bottom: 5px;
+  color: #007bff;
+}
+
+.form-field input,
+.form-field select {
+  width: 100%;
+  padding: 8px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Packages */
+.packages-group {
+  margin-top: 40px;
+}
+
+.packages-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.package-item {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  padding: 15px;
+  margin: 10px;
+  width: 250px;
+  text-align: left;
+  color: #000;
+}
+
+.package-item input[type="checkbox"] {
+  margin-right: 10px;
+}
+
+.package-item span {
+  font-size: 18px;
+  color: #000;
+}
+
+.package-description {
+  font-size: 16px;
+  color: #555;
+  margin: 10px 0;
+}
+
+.nights-input {
+  width: 100%;
+  padding: 8px;
+  font-size: 16px;
+  margin-top: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+
+/* Total Display */
+.total-display {
+  margin-top: 20px;
+  font-size: 24px;
+}
+
+.total-cost-container {
+  font-family: 'Lato', sans-serif;
+  color: #007bff; /* White text for contrast */
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.page-title {
+  font-family: 'Playfair Display', serif;
+  text-align: center;
+  font-size: 48px;
+  margin-top: 20px;
+  margin-bottom: 40px;
+  color: #0099ff;
+}
+
+.subtitle {
+  font-family: 'Lato', sans-serif;
+  text-align: center;
+  font-size: 24px;
+  margin-top: 10px;
+  margin-bottom: 40px;
+  color: #0099ff;
+}
+
+.section {
+  background-color: rgba(255, 255, 255, 0.85); /* Semi-transparent white */
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px auto;
+  width: 80%;
+  color: #000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+  font-size: 28px;
+  margin-bottom: 15px;
+  color: #007bff; /* Blue color */
+  font-family: 'Playfair Display', serif;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .form-group input,
+  .form-group select {
+    width: 80%;
+  }
+
+  .room-fields {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .form-field {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .packages-grid {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .package-item {
+    width: 80%;
+  }
 }

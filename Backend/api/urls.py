@@ -4,6 +4,7 @@ from .views import (
     DetailedTripViewSet,
     AroTripViewSet,
     TripBookingViewSet,
+    PassengerViewSet,
 )
 
 # Create a router and register ViewSets
@@ -13,6 +14,7 @@ router = DefaultRouter()
 router.register(r'trips', AroTripViewSet)
 router.register(r'detailed-trips', DetailedTripViewSet, basename='detailed-trip')
 router.register(r'trip-booking', TripBookingViewSet, basename='trip-booking')
+router.register(r'passengers', PassengerViewSet, basename='passengers')
 
 # URL patterns
 urlpatterns = [
