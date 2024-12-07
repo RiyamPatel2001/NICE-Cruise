@@ -1,12 +1,6 @@
 import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "./styles.css";
-
-const packages = [
-  { id: "spa", name: "Spa", price: 200 },
-  { id: "excursions", name: "Excursions", price: 150 },
-  { id: "dining", name: "Dining", price: 100 },
-];
 
 const rooms = [
   { id: "interior", name: "Interior Room", price: 500 },
@@ -15,114 +9,231 @@ const rooms = [
   { id: "suite", name: "Suite", price: 1500 },
 ];
 
-const TotalCost = () => {
-  const { state } = useLocation(); // Retrieve state from navigation
-  const { selectedCruise, cruisePrice } = state || {};
-  const [numberOfGuests, setNumberOfGuests] = useState(1); // Updated to consistent camelCase
-  const [numberOfRooms, setNumberOfRooms] = useState(1); // New state for # of Rooms
-  const [selectedPackages, setSelectedPackages] = useState([]);
-  const [selectedRoom, setSelectedRoom] = useState("");
-  const navigate = useNavigate();
+const packages = [
+  {
+    package_id: 1,
+    package_name: "Water and Non-Alcoholic",
+    package_price: 40.0,
+    price_type: "per night",
+    description:
+      "Includes water and non-alcoholic beverages per person per night",
+  },
+  {
+    package_id: 2,
+    package_name: "Excursions",
+    package_price: 150.0,
+    price_type: "per trip",
+    description:
+      "Includes all on-shore excursions for the duration of the trip",
+  },
+  {
+    package_id: 3,
+    package_name: "Spa",
+    package_price: 200.0,
+    price_type: "per trip",
+    description: "Access to the spa facilities for the entire trip",
+  },
+];
 
-  const handlePackageChange = (e) => {
-    const { value, checked } = e.target;
-    setSelectedPackages((prev) =>
-      checked ? [...prev, value] : prev.filter((pkg) => pkg !== value)
-    );
+const TotalCost = () => {
+  const [numberOfRooms, setNumberOfRooms] = useState(1);
+  const [roomsData, setRoomsData] = useState([
+    { type: "", adults: 1, children: 0 },
+  ]); // Store room details
+  const [selectedPackages, setSelectedPackages] = useState({});
+  const navigate = useNavigate();
+  const { state } = useLocation();
+  const { selectedCruise } = state || {}; // Retrieve selected cruise
+
+  // Dynamically update room data
+  const handleRoomChange = (index, field, value) => {
+    const updatedRooms = [...roomsData];
+    updatedRooms[index] = { ...updatedRooms[index], [field]: value };
+    setRoomsData(updatedRooms);
   };
 
-  const calculateTotal = () => {
-    const roomCost = rooms.find((room) => room.id === selectedRoom)?.price || 0;
-    const packageCost = selectedPackages.reduce(
-      (total, pkgId) =>
-        total + (packages.find((pkg) => pkg.id === pkgId)?.price || 0),
+  // Handle package selection and nights input
+  const handlePackageChange = (pkgId, field, value) => {
+    setSelectedPackages((prev) => ({
+      ...prev,
+      [pkgId]: {
+        ...prev[pkgId],
+        [field]: field === "checked" ? value : Number(value),
+      },
+    }));
+  };
+
+  // Calculate total cost
+  const calculateTotalCost = () => {
+    const roomCost = roomsData.reduce((total, room) => {
+      const roomType = rooms.find((r) => r.id === room.type);
+      return total + (roomType?.price || 0);
+    }, 0);
+
+    const packageCost = Object.entries(selectedPackages).reduce(
+      (total, [pkgId, pkgData]) => {
+        const pkg = packages.find((pkg) => pkg.package_id === Number(pkgId));
+        if (!pkg || !pkgData.checked) return total;
+
+        const nights = pkg.price_type === "per night" ? pkgData.nights || 0 : 0;
+        const perTripCost =
+          pkg.price_type === "per trip" ? pkg.package_price : 0;
+        return total + pkg.package_price * nights + perTripCost;
+      },
       0
     );
-    return cruisePrice + roomCost * numberOfRooms + packageCost;
+
+    return roomCost + packageCost;
+  };
+
+  // Update number of rooms
+  const handleNumberOfRoomsChange = (e) => {
+    const newNumber = Number(e.target.value);
+    setNumberOfRooms(newNumber);
+    setRoomsData(
+      Array.from(
+        { length: newNumber },
+        (_, i) => roomsData[i] || { type: "", adults: 1, children: 0 }
+      )
+    );
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!selectedRoom) {
-      alert("Please select a room type.");
+
+    // Validate room data
+    const incompleteRooms = roomsData.some(
+      (room) => !room.type || room.adults + room.children > 4
+    );
+    if (incompleteRooms) {
+      alert(
+        "Please assign a valid room type and ensure no more than 4 passengers per room."
+      );
       return;
     }
 
-    const totalCost = calculateTotal();
+    // Navigate to the Guest Information page
     navigate("/guestInformation", {
-      state: { totalCost, numberOfGuests, selectedRoom },
+      state: { roomsData, totalCost: calculateTotalCost(), selectedCruise },
     });
   };
 
   return (
-    <div className="total-cost-container">
-      <h1 style={{ textAlign: "center" }}>Total Cost</h1>
+    <div className="home-container">
+      <header className="header">
+        <h1>NICE</h1>
+      </header>
       <form onSubmit={handleSubmit}>
-        {/* Number of Guests */}
-        <div className="packages-group">
-          <label>Number of Guests:</label>
+        {/* Number of Rooms */}
+        <div className="total-form-group">
+          <label>Number of Rooms:</label>
           <input
             type="number"
-            value={numberOfGuests}
-            onChange={(e) => setNumberOfGuests(Number(e.target.value))}
+            value={numberOfRooms}
             min="1"
+            onChange={handleNumberOfRoomsChange}
             required
           />
         </div>
 
+        {/* Room Details */}
+        {roomsData.map((room, index) => (
+          <div key={index} className="room-section">
+            <h3>Room {index + 1}</h3>
+            <div className="room-details-grid">
+              <div>
+                <label>Room Type:</label>
+                <select
+                  value={room.type}
+                  onChange={(e) =>
+                    handleRoomChange(index, "type", e.target.value)
+                  }
+                  required
+                >
+                  <option value="">Select Room Type</option>
+                  {rooms.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} - ${r.price}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label>Adults:</label>
+                <input
+                  type="number"
+                  value={room.adults}
+                  min="1"
+                  onChange={(e) =>
+                    handleRoomChange(index, "adults", Number(e.target.value))
+                  }
+                  required
+                />
+              </div>
+              <div>
+                <label>Children (0-12):</label>
+                <input
+                  type="number"
+                  value={room.children}
+                  min="0"
+                  onChange={(e) =>
+                    handleRoomChange(index, "children", Number(e.target.value))
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+
         {/* Packages */}
         <div className="packages-group">
           <label>Select Packages:</label>
-          <div className="packages-list">
+          <div className="packages-grid">
             {packages.map((pkg) => (
-              <div key={pkg.id} className="package-item">
+              <div key={pkg.package_id} className="package-item">
+                {/* Checkbox for the Package */}
                 <input
                   type="checkbox"
-                  value={pkg.id}
-                  onChange={handlePackageChange}
-                  checked={selectedPackages.includes(pkg.id)}
+                  onChange={(e) =>
+                    handlePackageChange(
+                      pkg.package_id,
+                      "checked",
+                      e.target.checked
+                    )
+                  }
                 />
+                {/* Package Name, Price, and Description */}
                 <span>
-                  {pkg.name} - ${pkg.price}
+                  <strong>{pkg.package_name}</strong> - ${pkg.package_price} (
+                  {pkg.price_type})
                 </span>
+                <p className="package-description">{pkg.description}</p>
+
+                {/* Conditionally Render Nights Input */}
+                {pkg.price_type === "per night" &&
+                  selectedPackages[pkg.package_id]?.checked && (
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Number of Nights"
+                      className="nights-input"
+                      onChange={(e) =>
+                        handlePackageChange(
+                          pkg.package_id,
+                          "nights",
+                          e.target.value
+                        )
+                      }
+                    />
+                  )}
               </div>
             ))}
           </div>
         </div>
 
-        <div className="room-form-row-inline">
-          {/* Room Type */}
-          <div className="total-form-group">
-            <label>Select Room Type:</label>
-            <select
-              value={selectedRoom}
-              onChange={(e) => setSelectedRoom(e.target.value)}
-              required
-            >
-              <option value="">Select Room Type</option>
-              {rooms.map((room) => (
-                <option key={room.id} value={room.id}>
-                  {room.name} - ${room.price}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Number of Rooms */}
-          <div className="total-form-group">
-            <label>Number of Rooms:</label>
-            <input
-              type="number"
-              min="1"
-              value={numberOfRooms}
-              onChange={(e) => setNumberOfRooms(Number(e.target.value))}
-            />
-          </div>
-        </div>
-
         {/* Total Cost */}
         <div className="total-display">
-          <strong>Total Cost: ${calculateTotal()}</strong>
+          <strong>Total Cost: ${calculateTotalCost()}</strong>
         </div>
 
         <button type="submit" className="submit-button">

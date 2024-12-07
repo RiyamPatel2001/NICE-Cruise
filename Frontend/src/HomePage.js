@@ -4,6 +4,7 @@ import CruiseCard from "./CruiseCard";
 import axios from "./api";
 import "./styles.css";
 
+
 const HomePage = () => {
   const [trips, setTrips] = useState([]);
   const [selectedCruise, setSelectedCruise] = useState(null);
@@ -41,7 +42,7 @@ const HomePage = () => {
     e.preventDefault();
     if (selectedCruise) {
       navigate("/total-cost", {
-        state: { selectedCruise },
+        state: { selectedCruise, cruisePrice: selectedCruise.price },
       });
     } else {
       alert("Please select a cruise before proceeding.");
