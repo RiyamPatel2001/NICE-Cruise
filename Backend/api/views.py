@@ -574,7 +574,8 @@ class DetailedTripViewSet(BaseModelViewSet):
                     'package_id': pkg.package_id,
                     'package_name': pkg.package_name,
                     'package_price': pkg.package_price,
-                    'price_type': pkg.price_type
+                    'price_type': pkg.price_type,
+                    'description': pkg.description
                 } for pkg in AroPackages.objects.all()
             ]
         except Exception as e:
