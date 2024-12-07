@@ -4,46 +4,6 @@ import CruiseCard from "./CruiseCard";
 import axios from "./api";
 import "./styles.css";
 
-const mockCruises = [
-  {
-    id: 1,
-    destination: "Caribbean",
-    departurePort: "Miami",
-    leavingDate: "2024-12-15",
-    price: 1500,
-    ports: [
-      { day: 1, location: "Miami, Florida", time: "Departs: 3:00 PM" },
-      { day: 2, location: "At Sea", time: "" },
-      {
-        day: 3,
-        location: "Nassau, Bahamas",
-        time: "Docked: 12:30 PM - 8:00 PM",
-      },
-      {
-        day: 4,
-        location: "Perfect Day at CocoCay",
-        time: "Docked: 7:00 AM - 5:00 PM",
-      },
-      { day: 5, location: "At Sea", time: "" },
-      { day: 6, location: "Miami, Florida", time: "Arrival: 6:00 AM" },
-    ],
-  },
-  {
-    id: 2,
-    destination: "Mediterranean",
-    departurePort: "Barcelona",
-    leavingDate: "2024-12-20",
-    price: 1800,
-    ports: [
-      { day: 1, location: "Barcelona, Spain", time: "Departs: 5:00 PM" },
-      { day: 2, location: "At Sea", time: "" },
-      { day: 3, location: "Rome, Italy", time: "Docked: 9:00 AM - 6:00 PM" },
-      { day: 4, location: "Naples, Italy", time: "Docked: 7:00 AM - 4:00 PM" },
-      { day: 5, location: "At Sea", time: "" },
-      { day: 6, location: "Barcelona, Spain", time: "Arrival: 7:00 AM" },
-    ],
-  },
-];
 
 const HomePage = () => {
   const [trips, setTrips] = useState([]);
@@ -81,7 +41,7 @@ const HomePage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (selectedCruise) {
-      navigate("/totalCost", {
+      navigate("/total-cost", {
         state: { selectedCruise, cruisePrice: selectedCruise.price },
       });
     } else {
