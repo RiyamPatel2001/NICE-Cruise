@@ -1,3 +1,20 @@
+import CreditCardIcon from '@mui/icons-material/CreditCard';
+import PaymentIcon from '@mui/icons-material/Payment';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import {
+    Box,
+    Button,
+    Card,
+    CardContent,
+    Container,
+    Grid,
+    IconButton,
+    InputAdornment,
+    Paper,
+    TextField,
+    Typography
+} from '@mui/material';
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from './api';
@@ -8,23 +25,20 @@ const PaymentForm = () => {
 
   // State for form data and trip details
   const [formData, setFormData] = useState({
-    name: "John Doe",  // Default name
-    cardNumber: "4111 1111 1111 1111",  // Valid test Visa card number
-    securityCode: "123",  // Default CVV
-    expirationDate: getDefaultExpirationDate(),  // Future date
-    country: "United States",  // Default country
-    zip: "12345",  // Default ZIP code
-    paymentMethod: "Credit Card"  // Default payment method
+    name: "John Doe",
+    cardNumber: "4111 1111 1111 1111",
+    securityCode: "123",
+    expirationDate: getDefaultExpirationDate(),
+    country: "United States",
+    zip: "12345",
+    paymentMethod: "Credit Card"
   });
 
-  function getDefaultExpirationDate() {
-    const now = new Date();
-    const nextYear = now.getFullYear() + 1;
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    return `${nextYear}-${month}`;
-  }
+  // State to manage password visibility and form errors
+  const [showSecurityCode, setShowSecurityCode] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  // State for total cost and trip details
+  // State for trip and booking details
   const [totalCost, setTotalCost] = useState(0);
   const [tripDetails, setTripDetails] = useState(null);
   const [groupId, setGroupId] = useState(null);
@@ -34,8 +48,13 @@ const PaymentForm = () => {
   const [roomsData, setRoomsData] = useState([]);
   const [tripId, setTripId] = useState(null);
 
-  // Validation states
-  const [errors, setErrors] = useState({});
+  // Default expiration date function
+  function getDefaultExpirationDate() {
+    const now = new Date();
+    const nextYear = now.getFullYear() + 1;
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return `${nextYear}-${month}`;
+  }
 
   // Fetch trip details from previous page
   useEffect(() => {
@@ -61,7 +80,6 @@ const PaymentForm = () => {
       setTripDetails(tripDetails);
       setTripId(trip_id);
     } else {
-      // Redirect if no trip details
       console.log("No trip details found");
     }
   }, [location, navigate]);
@@ -119,12 +137,28 @@ const PaymentForm = () => {
     }));
   };
 
+  // Toggle security code visibility
+  const handleToggleSecurityCode = () => {
+    setShowSecurityCode(!showSecurityCode);
+  };
+
+  const calculateDuration = (startDate, endDate) => {
+    if (!startDate || !endDate) return 0;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const duration = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    return duration;
+  }
+
   // Submit payment
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
+    
+    if (!validateForm()) {
+      return;
+    }
 
-      console.log(tripDetails)
+    try {
       const paymentResponse = await axios.post('/api/booking-payment/', {
         passenger_id: passengerIds[0],
         group_id: groupId,
@@ -132,16 +166,6 @@ const PaymentForm = () => {
         total_cost: totalCost,
         payment_method: formData.paymentMethod,
         packages: selectedPackages
-      });
-
-      console.log('Navigating to Success page with state:', {
-        bookingDetails: paymentResponse.data.booking,
-        invoiceDetails: paymentResponse.data.invoice,
-        paymentDetails: paymentResponse.data.payment,
-        selectedCruise: tripDetails?.selectedCruise,
-        totalCost,
-        selectedPackages,
-        guests
       });
 
       navigate('/success', { 
@@ -154,160 +178,305 @@ const PaymentForm = () => {
             selectedPackages,
             guests
         } 
-
       });
     } catch (error) {
-      // Handle payment errors
       console.error('Payment processing error:', error.response?.data);
     }
   };
 
   return (
-    <div className="payment-container">
-      <h1>Payment Information</h1>
-    {tripDetails && (
-      <div className="payment-summary">
-        <h2>{tripDetails.selectedCruise?.ship_name} Cruise</h2>
-        <p>Total Cost: ${totalCost.toFixed(2)}</p>
-        
-        {/* Room Information */}
-        <div className="room-details">
-          <h3>Room Details</h3>
-          {roomsData && roomsData.map((room, index) => (
-            <div key={index} className="room-info">
-              <p>Room {index + 1}: {room.type}</p>
-              <p>Adults: {room.adults}</p>
-              <p>Children: {room.children}</p>
-            </div>
-          ))}
-        </div>
+    <Container maxWidth="md">
+      <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
+        <Typography 
+          variant="h4" 
+          gutterBottom 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            mb: 3 
+          }}
+        >
+          <PaymentIcon sx={{ mr: 2 }} /> Payment Information
+        </Typography>
 
-        {/* Detailed Package Information */}
-        <div className="selected-packages">
-          <h3>Selected Packages:</h3>
-          {selectedPackages && selectedPackages.map((packageGroup, guestIndex) => (
-            <div key={guestIndex}>
-              <h4>Guest {guestIndex + 1} Packages:</h4>
-              {Object.entries(packageGroup).map(([packageId, quantity]) => {
-                // Fallback to empty array if packages is undefined
-                const packages = location.state?.tripDetails?.packages || [];
-                
-                // Find the full package details
-                const packageDetails = packages.find(
-                  pkg => pkg.package_id === Number(packageId)
-                );
-                
-                return packageDetails ? (
-                  <div key={packageId} className="package-detail">
-                    <p><strong>{packageDetails.package_name}</strong></p>
-                    <p>Price: ${packageDetails.package_price}</p>
-                    <p>Price Type: {packageDetails.price_type}</p>
-                    <p>Description: {packageDetails.description}</p>
-                    {packageDetails.price_type === 'per night' && (
-                      <p>Number of Nights: {quantity}</p>
-                    )}
-                  </div>
-                ) : (
-                  <div key={packageId} className="package-detail">
-                    <p>Package {packageId} Details Unavailable</p>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
-    )}
+        {/* Trip Summary Section */}
+        {tripDetails && (
+            <Card 
+                variant="outlined" 
+                sx={{ 
+                mb: 3, 
+                background: 'linear-gradient(145deg, #f0f4f8 0%, #e6eaf0 100%)',
+                borderRadius: 2,
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                }}
+            >
+                <CardContent>
+                {/* Cruise Header */}
+                <Box 
+                    sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    mb: 2,
+                    pb: 2,
+                    borderBottom: '1px solid rgba(0,0,0,0.1)'
+                    }}
+                >
+                    <Box>
+                    <Typography variant="h5" color="primary" fontWeight="bold">
+                        {tripDetails.trip_info?.ship_name} Cruise
+                    </Typography>
+                    <Typography variant="subtitle2" color="text.secondary">
+                        {tripDetails.trip_info?.start_date} to {tripDetails.trip_info?.end_date}
+                    </Typography>
+                    </Box>
+                    <Typography variant="h6" color="primary">
+                    Total Cost: ${totalCost.toFixed(2)}
+                    </Typography>
+                </Box>
 
-      <form className="payment-form" onSubmit={handleSubmit}>
-        {/* Name Input */}
-        <div className="payment-form-group">
-          <label>Name on Card</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            placeholder="Enter name as it appears on the card"
-            required
-          />
-          {errors.name && <span className="error">{errors.name}</span>}
-        </div>
+                {/* Detailed Trip Information Grid */}
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                    <Grid item xs={12} md={6}>
+                    <Box sx={{ 
+                        bgcolor: 'background.paper', 
+                        p: 2, 
+                        borderRadius: 2,
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                    }}>
+                        <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom>
+                        Cruise Itinerary
+                        </Typography>
+                        <Box sx={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        mb: 1,
+                        p: 1,
+                        bgcolor: 'grey.100',
+                        borderRadius: 1
+                        }}>
+                        <Box>
+                            <Typography variant="body2" fontWeight="bold">Departure Port</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                            {tripDetails.trip_info?.start_port}
+                            </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                            <Typography variant="body2" fontWeight="bold">Arrival Port</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                            {tripDetails.trip_info?.end_port}
+                            </Typography>
+                        </Box>
+                        </Box>
+                    </Box>
+                    </Grid>
 
-        {/* Card Number Input */}
-        <div className="payment-form-group">
-          <label>Card Number</label>
-          <input
-            type="text"
-            name="cardNumber"
-            value={formData.cardNumber}
-            onChange={handleCardNumberChange}
-            placeholder="1234 5678 9012 3456"
-            maxLength="19"
-            required
-          />
-          {errors.cardNumber && <span className="error">{errors.cardNumber}</span>}
-        </div>
+                    <Grid item xs={12} md={6}>
+                    <Box sx={{ 
+                        bgcolor: 'background.paper', 
+                        p: 2, 
+                        borderRadius: 2,
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                    }}>
+                        <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom>
+                        Selected Packages
+                        </Typography>
+                        {selectedPackages && selectedPackages.map((packageGroup, guestIndex) => (
+                        <Box key={guestIndex} sx={{ mb: 2 }}>
+                            <Typography variant="subtitle2" color="text.secondary">
+                            Guest {guestIndex + 1} Packages
+                            </Typography>
+                            {Object.entries(packageGroup).map(([packageId, quantity]) => {
+                            const packages = location.state?.tripDetails?.packages || [];
+                            const packageDetails = packages.find(
+                                pkg => pkg.package_id === Number(packageId)
+                            );
+                            
+                            return packageDetails ? (
+                                <Box 
+                                key={packageId} 
+                                sx={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between', 
+                                    alignItems: 'center',
+                                    bgcolor: 'grey.100',
+                                    p: 1,
+                                    borderRadius: 1,
+                                    mb: 1
+                                }}
+                                >
+                                <Typography variant="body2">
+                                    {packageDetails.package_name}
+                                </Typography>
+                                <Box sx={{ textAlign: 'right' }}>
+                                    <Typography variant="body2" color="primary">
+                                    ${packageDetails.package_price}
+                                    </Typography>
+                                    {packageDetails.price_type && (
+                                    <Typography variant="caption" color="text.secondary">
+                                        {packageDetails.price_type}
+                                    </Typography>
+                                    )}
+                                </Box>
+                                </Box>
+                            ) : null;
+                            })}
+                        </Box>
+                        ))}
+                    </Box>
+                    </Grid>
+                </Grid>
 
-        {/* Security Code Input */}
-        <div className="payment-form-group">
-          <label>Security Code</label>
-          <input
-            type="text"
-            name="securityCode"
-            value={formData.securityCode}
-            onChange={handleChange}
-            placeholder="123"
-            maxLength="4"
-            required
-          />
-          {errors.securityCode && <span className="error">{errors.securityCode}</span>}
-        </div>
+                {/* Additional Trip Information */}
+                <Box 
+                    sx={{ 
+                    bgcolor: 'primary.light', 
+                    color: 'primary.contrastText',
+                    p: 2, 
+                    borderRadius: 2,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                    }}
+                >
+                    <Box>
+                    <Typography variant="subtitle2">
+                        Passengers: {tripDetails.trip_info?.number_passengers}
+                    </Typography>
+                    <Typography variant="caption">
+                        Trip ID: {tripDetails.trip_info?.trip_id}
+                    </Typography>
+                    </Box>
+                    <Typography variant="subtitle2">
+                    Duration: {calculateDuration(tripDetails.trip_info?.start_date, tripDetails.trip_info?.end_date)} days
+                    </Typography>
+                </Box>
+                </CardContent>
+            </Card>
+            )}
 
-        {/* Expiration Date Input */}
-        <div className="payment-form-group">
-          <label>Expiration Date</label>
-          <input
-            type="month"
-            name="expirationDate"
-            value={formData.expirationDate}
-            onChange={handleChange}
-            required
-          />
-          {errors.expirationDate && <span className="error">{errors.expirationDate}</span>}
-        </div>
+        <form onSubmit={handleSubmit}>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Name on Card"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                error={!!errors.name}
+                helperText={errors.name}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <CreditCardIcon />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
 
-        {/* Country Input */}
-        <div className="payment-form-group">
-          <label>Country</label>
-          <input
-            type="text"
-            name="country"
-            value={formData.country}
-            onChange={handleChange}
-            placeholder="Enter country"
-            required
-          />
-        </div>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Card Number"
+                name="cardNumber"
+                value={formData.cardNumber}
+                onChange={handleCardNumberChange}
+                error={!!errors.cardNumber}
+                helperText={errors.cardNumber}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <CreditCardIcon />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
 
-        {/* ZIP Code Input */}
-        <div className="payment-form-group">
-          <label>ZIP Code</label>
-          <input
-            type="text"
-            name="zip"
-            value={formData.zip}
-            onChange={handleChange}
-            placeholder="12345"
-            required
-          />
-        </div>
+            <Grid item xs={6}>
+              <TextField
+                fullWidth
+                label="Security Code"
+                name="securityCode"
+                value={formData.securityCode}
+                onChange={handleChange}
+                error={!!errors.securityCode}
+                helperText={errors.securityCode}
+                required
+                type={showSecurityCode ? "text" : "password"}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={handleToggleSecurityCode}
+                        edge="end"
+                      >
+                        {showSecurityCode ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
 
-        <button type="submit" className="submit-button">
-          Pay ${totalCost.toFixed(2)}
-        </button>
-      </form>
-    </div>
+            <Grid item xs={6}>
+              <TextField
+                fullWidth
+                label="Expiration Date"
+                name="expirationDate"
+                type="month"
+                value={formData.expirationDate}
+                onChange={handleChange}
+                error={!!errors.expirationDate}
+                helperText={errors.expirationDate}
+                required
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+
+            <Grid item xs={6}>
+              <TextField
+                fullWidth
+                label="Country"
+                name="country"
+                value={formData.country}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+
+            <Grid item xs={6}>
+              <TextField
+                fullWidth
+                label="ZIP Code"
+                name="zip"
+                value={formData.zip}
+                onChange={handleChange}
+                required
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                fullWidth
+                size="large"
+                startIcon={<PaymentIcon />}
+              >
+                Pay ${totalCost.toFixed(2)}
+              </Button>
+            </Grid>
+          </Grid>
+        </form>
+      </Paper>
+    </Container>
   );
 };
 

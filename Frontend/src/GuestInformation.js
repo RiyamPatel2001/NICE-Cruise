@@ -6,7 +6,7 @@ import "./styles.css";
 
 const GuestInformation = () => {
   const { state } = useLocation(); // Retrieve state from TotalCost
-  const { roomsData, totalCost, selectedCruise, group_id, trip_id, tripDetails } = state || {}; // Extract data
+  const { roomsData, totalCost, selectedCruise, group_id, trip_id, tripDetails} = state || {}; // Extract data
 
   const [packageTotalCost, setPackageTotalCost] = useState(0);
 
@@ -16,22 +16,21 @@ const GuestInformation = () => {
   const [guests, setGuests] = useState(
     roomsData.flatMap((room, roomIndex) =>
       Array.from({ length: room.adults + room.children }, (_, guestIndex) => ({
-        firstName: "",
-        lastName: "",
-        gender: "",
-        dob: "",
-        country: "",
-        state: "",
-        city: "",
-        zipCode: "",
-        addressLine1: "",
-        addressLine2: "",
-        email: "",
-        phone: "",
-        id: `Room ${roomIndex + 1} (Type ${room.type}) - Guest ${guestIndex + 1}`,
+        firstName: `FirstName${roomIndex + 1}_${guestIndex + 1}`,
+        lastName: `LastName${roomIndex + 1}_${guestIndex + 1}`,
+        gender: guestIndex % 2 === 0 ? "Male" : "Female",
+        dob: "1990-01-01",
+        country: "United States",
+        state: "California",
+        city: `City${roomIndex + 1}`,
+        zipCode: "12345",
+        addressLine1: `${guestIndex + 1} Main St`,
+        email: `guest${roomIndex + 1}_${guestIndex + 1}@example.com`,
+        phone: `555-${roomIndex + 1}${guestIndex + 1}0-0000`,
+        id: `Room ${room.type} - Guest ${guestIndex + 1}`,
         roomNumber: room.type,
         isChild: guestIndex >= room.adults,
-        selectedPackages: {},  // Initialize empty packages
+        selectedPackages: {}  // Initialize empty packages
       }))
     )
   );
@@ -56,9 +55,9 @@ const GuestInformation = () => {
                 ...guest.selectedPackages,
                 [packageId]: {
                   ...guest.selectedPackages[packageId],
-                  [field]: field === 'checked' ? value : Number(value),
-                },
-              },
+                  [field]: field === 'checked' ? value : Number(value)
+                }
+              }
             }
           : guest
       )
@@ -69,7 +68,6 @@ const GuestInformation = () => {
   const handleNextGuest = () => {
     if (currentGuestIndex < guests.length - 1) {
       setCurrentGuestIndex(currentGuestIndex + 1);
-      console.log('Moved to guest index:', currentGuestIndex + 1);
     } else {
       alert("All guests have been completed!");
     }
@@ -130,14 +128,17 @@ const GuestInformation = () => {
         passengersData
       );
 
+      
+
       // Handle backend response if needed
       console.log("Passengers added successfully:", response.data);
+      
 
       const passenger_ids = response.data.created_passengers.map(
-        (passenger) => passenger.passenger_id
+        passenger => passenger.passenger_id
       );
 
-      const transformedSelectedPackages = guests.map((guest) =>
+      const transformedSelectedPackages = guests.map(guest => 
         Object.entries(guest.selectedPackages)
           .filter(([_, packageData]) => packageData.checked)
           .reduce((acc, [packageId, packageData]) => {
@@ -147,31 +148,30 @@ const GuestInformation = () => {
       );
 
       const totalPackageCost = guests.reduce((total, guest) => {
-        return (
-          total +
-          Object.entries(guest.selectedPackages).reduce(
-            (packageTotal, [pkgId, pkgData]) => {
-              const pkg = tripDetails.packages.find(
-                (p) => p.package_id === Number(pkgId)
-              );
-
-              if (!pkg || !pkgData.checked) return packageTotal;
-
-              if (pkg.price_type === "per night") {
-                return packageTotal + pkg.package_price * (pkgData.nights || 0);
-              } else if (pkg.price_type === "per trip") {
-                return packageTotal + pkg.package_price;
-              }
-
-              return packageTotal;
-            },
-            0
-          )
+        return total + Object.entries(guest.selectedPackages).reduce(
+          (packageTotal, [pkgId, pkgData]) => {
+            const pkg = tripDetails.packages.find(
+              (p) => p.package_id === Number(pkgId)
+            );
+            
+            if (!pkg || !pkgData.checked) return packageTotal;
+  
+            if (pkg.price_type === "per night") {
+              return packageTotal + (pkg.package_price * (pkgData.nights || 0));
+            } else if (pkg.price_type === "per trip") {
+              return packageTotal + pkg.package_price;
+            }
+            
+            return packageTotal;
+          },
+          0
         );
       }, 0);
+      
 
-      // Navigate to Payment Form page with all necessary information
-      navigate("/payment-form", {
+      console.log(tripDetails)
+      // Navigate to Total Cost page with all necessary information
+      navigate('/payment-form', {
         state: {
           selectedCruise,
           roomsData,
@@ -180,13 +180,14 @@ const GuestInformation = () => {
           trip_id,
           group_id: response.data.group_id,
           passenger_ids: passenger_ids,
-          guests: guests, // Pass the entire guests array
-          tripDetails: tripDetails,
-        },
+          guests: guests,  // Pass the entire guests array
+          tripDetails: tripDetails
+        }
       });
+
     } catch (error) {
       console.error("Error adding passengers:", error.response?.data || error);
-      console.log(passengersData);
+      console.log(passengersData)
       alert("Failed to add passengers. Please try again.");
     }
   };
@@ -208,7 +209,7 @@ const GuestInformation = () => {
     return age;
   };
 
-  // Calculate package cost
+  // Calculate package cost using the same logic as TotalCost.js
   const calculateTotalPackageCost = () => {
     const totalPackageCost = guests.reduce((total, guest) => {
       const guestPackageCost = Object.entries(guest.selectedPackages).reduce(
@@ -216,37 +217,30 @@ const GuestInformation = () => {
           const pkg = tripDetails.packages.find(
             (p) => p.package_id === Number(pkgId)
           );
-
+          
           if (!pkg || !pkgData.checked) return packageTotal;
 
           if (pkg.price_type === "per night") {
-            return packageTotal + pkg.package_price * (pkgData.nights || 0);
+            return packageTotal + (pkg.package_price * (pkgData.nights || 0));
           } else if (pkg.price_type === "per trip") {
             return packageTotal + pkg.package_price;
           }
-
+          
           return packageTotal;
         },
         0
       );
       return total + guestPackageCost;
     }, 0);
-
+    
     setPackageTotalCost(totalPackageCost);
   };
 
   return (
-    <div
-      style={{
-        backgroundImage: "url(/background.jpg)",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        minHeight: "100vh",
-        padding: "20px",
-      }}
-    >
+    <div style={{ backgroundImage: 'url(/background.jpg)', backgroundSize: 'cover', 
+      backgroundPosition: 'center',minHeight: '100vh', padding: '20px' }}>
       <Container maxWidth="md" sx={{ mt: 4 }}>
-        <Paper elevation={3} sx={{ p: 3, borderRadius: "16px" }}>
+        <Paper elevation={3} sx={{ p: 3, borderRadius: '16px' }}>
           <Typography variant="h4" component="h1" gutterBottom>
             Guest Information
           </Typography>
@@ -299,29 +293,25 @@ const GuestInformation = () => {
                 <option value="Other">Other</option>
               </select>
               {/* Date of Birth */}
-              <Tooltip
-                title="Select your birth date"
+              <Tooltip 
+                title="Select your birth date" 
                 arrow
                 placement="top"
                 sx={{
                   tooltip: {
-                    fontSize: "16px",
-                    padding: "10px",
+                    fontSize: '16px', // Adjust the font size
+                    padding: '10px', // Adjust the padding
                   },
                   arrow: {
-                    fontSize: "1rem",
-                  },
+                    fontSize: '1rem', // Adjust the arrow size
+                  }
                 }}
               >
                 <input
                   type="date"
                   value={guests[currentGuestIndex]?.dob}
                   onChange={(e) =>
-                    handleGuestChange(
-                      guests[currentGuestIndex]?.id,
-                      "dob",
-                      e.target.value
-                    )
+                    handleGuestChange(guests[currentGuestIndex]?.id, "dob", e.target.value)
                   }
                   required
                   className="guest-form-grid-input"
@@ -347,11 +337,7 @@ const GuestInformation = () => {
                 placeholder="State/Province"
                 value={guests[currentGuestIndex]?.state}
                 onChange={(e) =>
-                  handleGuestChange(
-                    guests[currentGuestIndex]?.id,
-                    "state",
-                    e.target.value
-                  )
+                  handleGuestChange(guests[currentGuestIndex]?.id, "state", e.target.value)
                 }
                 required
               />
@@ -361,11 +347,7 @@ const GuestInformation = () => {
                 placeholder="City"
                 value={guests[currentGuestIndex]?.city}
                 onChange={(e) =>
-                  handleGuestChange(
-                    guests[currentGuestIndex]?.id,
-                    "city",
-                    e.target.value
-                  )
+                  handleGuestChange(guests[currentGuestIndex]?.id, "city", e.target.value)
                 }
                 required
               />
@@ -416,11 +398,7 @@ const GuestInformation = () => {
                 placeholder="Email Address"
                 value={guests[currentGuestIndex]?.email}
                 onChange={(e) =>
-                  handleGuestChange(
-                    guests[currentGuestIndex]?.id,
-                    "email",
-                    e.target.value
-                  )
+                  handleGuestChange(guests[currentGuestIndex]?.id, "email", e.target.value)
                 }
               />
               {/* Phone */}
@@ -429,26 +407,22 @@ const GuestInformation = () => {
                 placeholder="Phone Number"
                 value={guests[currentGuestIndex]?.phone}
                 onChange={(e) =>
-                  handleGuestChange(
-                    guests[currentGuestIndex]?.id,
-                    "phone",
-                    e.target.value
-                  )
+                  handleGuestChange(guests[currentGuestIndex]?.id, "phone", e.target.value)
                 }
                 required
               />
             </div>
 
             <Box sx={{ mb: 3 }}>
-              <Typography
-                variant="h5"
-                gutterBottom
-                sx={{
-                  borderBottom: "2px solid #1976d2",
+              <Typography 
+                variant="h5" 
+                gutterBottom 
+                sx={{ 
+                  borderBottom: '2px solid #1976d2',
                   pb: 1,
                   mb: 3,
-                  color: "#1976d2",
-                  fontWeight: "bold",
+                  color: '#1976d2',
+                  fontWeight: 'bold'
                 }}
               >
                 Select Packages for {guests[currentGuestIndex]?.id}
@@ -456,69 +430,65 @@ const GuestInformation = () => {
               <Grid container spacing={3}>
                 {tripDetails.packages.map((pkg) => (
                   <Grid item xs={12} sm={6} md={4} key={pkg.package_id}>
-                    <Card
-                      variant="outlined"
-                      sx={{
-                        height: "100%",
-                        transition: "all 0.3s ease",
-                        "&:hover": {
-                          transform: "translateY(-4px)",
-                          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                    <Card 
+                      variant="outlined" 
+                      sx={{ 
+                        height: '100%',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
                         },
-                        border: guests[currentGuestIndex]?.selectedPackages[
-                          pkg.package_id
-                        ]?.checked
-                          ? "2px solid #1976d2"
-                          : "1px solid rgba(0, 0, 0, 0.12)",
-                        position: "relative",
-                        overflow: "visible",
-                        borderRadius: "16px",
+                        border: guests[currentGuestIndex]?.selectedPackages[pkg.package_id]?.checked 
+                          ? '2px solid #1976d2' 
+                          : '1px solid rgba(0, 0, 0, 0.12)',
+                        position: 'relative',
+                        overflow: 'visible',
+                        borderRadius: '16px',
                       }}
                     >
-                      <CardContent
-                        sx={{
-                          p: 3,
-                          "&:last-child": { pb: 3 },
-                          borderRadius: "16px",
-                        }}
-                      >
-                        <Typography
-                          variant="h6"
-                          component="div"
-                          sx={{
-                            fontWeight: "bold",
-                            color: "#2c3e50",
-                            mb: 1,
+                      <CardContent sx={{ 
+                        p: 3,
+                        '&:last-child': { pb: 3 },
+                        borderRadius: '16px',
+                      }}>
+                        <Typography 
+                          variant="h6" 
+                          component="div" 
+                          sx={{ 
+                            fontWeight: 'bold',
+                            color: '#2c3e50',
+                            mb: 1
                           }}
                         >
                           {pkg.package_name}
                         </Typography>
-                        <Typography
-                          sx={{
+                        <Typography 
+                          sx={{ 
                             mb: 2,
-                            color: "#1976d2",
-                            fontSize: "1.25rem",
-                            fontWeight: "500",
+                            color: '#1976d2',
+                            fontSize: '1.25rem',
+                            fontWeight: '500'
                           }}
                         >
-                          ${pkg.package_price}
-                          <Typography
-                            component="span"
-                            sx={{
-                              color: "#666",
-                              fontSize: "0.875rem",
+                          ${pkg.package_price} 
+                          <Typography 
+                            component="span" 
+                            sx={{ 
+                              color: '#666',
+                              fontSize: '0.875rem'
                             }}
                           >
                             ({pkg.price_type})
                           </Typography>
                         </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
                             mb: 3,
-                            color: "#666",
-                            minHeight: "60px",
-                            lineHeight: "1.6",
+                            color: '#666',
+                            minHeight: '60px',
+                            lineHeight: '1.6'
                           }}
                         >
                           {pkg.description}
@@ -526,69 +496,59 @@ const GuestInformation = () => {
                         <FormControlLabel
                           control={
                             <Checkbox
-                              checked={
-                                guests[currentGuestIndex]?.selectedPackages[
-                                  pkg.package_id
-                                ]?.checked || false
-                              }
+                              checked={guests[currentGuestIndex]?.selectedPackages[pkg.package_id]?.checked || false}
                               onChange={(e) =>
                                 handlePackageChange(
                                   guests[currentGuestIndex]?.id,
                                   pkg.package_id,
-                                  "checked",
+                                  'checked',
                                   e.target.checked
                                 )
                               }
                               sx={{
-                                color: "#1976d2",
-                                "&.Mui-checked": {
-                                  color: "#1976d2",
+                                color: '#1976d2',
+                                '&.Mui-checked': {
+                                  color: '#1976d2',
                                 },
                               }}
                             />
                           }
                           label={
-                            <Typography sx={{ fontWeight: "500" }}>
+                            <Typography sx={{ fontWeight: '500' }}>
                               Select Package
                             </Typography>
                           }
                         />
-                        {pkg.price_type === "per night" &&
-                          guests[currentGuestIndex]?.selectedPackages[
-                            pkg.package_id
-                          ]?.checked && (
+                        {pkg.price_type === "per night" && 
+                          guests[currentGuestIndex]?.selectedPackages[pkg.package_id]?.checked && (
                             <TextField
                               label="Number of Nights"
                               type="number"
                               min="1"
-                              value={
-                                guests[currentGuestIndex]?.selectedPackages[
-                                  pkg.package_id
-                                ]?.nights || 0
-                              }
+                              value={guests[currentGuestIndex]?.selectedPackages[pkg.package_id]?.nights || 0}
                               onChange={(e) =>
                                 handlePackageChange(
                                   guests[currentGuestIndex]?.id,
                                   pkg.package_id,
-                                  "nights",
+                                  'nights',
                                   e.target.value
                                 )
                               }
-                              sx={{
+                              sx={{ 
                                 mt: 2,
-                                width: "100%",
-                                "& .MuiOutlinedInput-root": {
-                                  borderRadius: "12px",
-                                  "&:hover fieldset": {
-                                    borderColor: "#1976d2",
+                                width: '100%',
+                                '& .MuiOutlinedInput-root': {
+                                  borderRadius: '12px',
+                                  '&:hover fieldset': {
+                                    borderColor: '#1976d2',
                                   },
                                 },
                               }}
                               InputProps={{
-                                sx: { borderRadius: "12px" },
+                                sx: { borderRadius: '12px' }
                               }}
                             />
-                          )}
+                        )}
                       </CardContent>
                     </Card>
                   </Grid>
@@ -596,15 +556,11 @@ const GuestInformation = () => {
               </Grid>
             </Box>
 
-            <Box
-              sx={{ display: "flex", justifyContent: "space-between", mt: 4 }}
-            >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
               {currentGuestIndex < guests.length - 1 ? (
-                <Button
-                  variant="contained"
+                <Button variant="contained" 
                   type="button"
-                  onClick={handleNextGuest}
-                >
+                  onClick={handleNextGuest}>
                   Next Guest
                 </Button>
               ) : (
