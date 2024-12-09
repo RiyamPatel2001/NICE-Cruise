@@ -1,11 +1,11 @@
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import {
-    Box,
-    Button,
-    Container,
-    Paper,
-    TextField,
-    Typography
+  Box,
+  Button,
+  Container,
+  Paper,
+  TextField,
+  Typography
 } from '@mui/material';
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -40,7 +40,7 @@ const Register = () => {
     try {
       await axios.post("/api/register/", newUser);
       alert("Registration successful");
-      navigate("/signin");
+      navigate("/home");
     } catch (err) {
       console.error(err.response?.data || err.message);
       alert("Error registering user");

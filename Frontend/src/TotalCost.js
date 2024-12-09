@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import AIChatCircle from './AIChatCircle';
 import axios from "./api";
 import "./styles.css";
 
@@ -139,8 +140,10 @@ const TotalCost = () => {
       console.log("Group details submitted successfully:", response.data);
 
       // Navigate to the Guest Information page
+
+      console.log(roomsData)
       navigate("/guest-information", {
-        state: { roomsData, totalCost: calculateTotalCost(), selectedCruise, group_id, trip_id: selectedCruise.trip_id },
+        state: { roomsData, totalCost: calculateTotalCost(), selectedCruise, group_id, trip_id: selectedCruise.trip_id, tripDetails },
       });
     } catch (error) {
       console.error("Error submitting group details:", error);
@@ -150,6 +153,7 @@ const TotalCost = () => {
 
   if (loading) {
     return <div>Loading trip details...</div>;
+    
   }
 
   if (error) {
@@ -435,7 +439,7 @@ const TotalCost = () => {
           </div>
 
           {/* Packages */}
-          <div className="packages-group section">
+          {/* <div className="packages-group section">
             <h3 className="section-title">Select Packages</h3>
             <div className="packages-grid">
               {tripDetails.packages.map((pkg) => (
@@ -467,11 +471,11 @@ const TotalCost = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Total Cost */}
           <div className="total-display">
-            <strong>Total Cost: ${calculateTotalCost()}</strong>
+            <strong>Estimated Cost: ${calculateTotalCost()}</strong>
           </div>
 
           <button type="submit" className="submit-button">
@@ -479,6 +483,13 @@ const TotalCost = () => {
           </button>
         </form>
       </div>
+
+      {/* Add AI Chat Circle */}
+      {tripDetails && (
+        <AIChatCircle 
+          tripId={tripDetails.trip_info.trip_id} 
+        />
+      )}
     </div>
   );
 };

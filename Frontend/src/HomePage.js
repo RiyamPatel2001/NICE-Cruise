@@ -1,12 +1,13 @@
 import {
   Box,
+  Button,
   Container,
   Grid,
   Paper,
-  Typography,
+  Typography
 } from '@mui/material';
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import CruiseCard from "./CruiseCard";
 import axios from "./api";
 import "./styles.css";
@@ -209,6 +210,30 @@ const HomePage = () => {
           >
             Select Your Cruise
           </Typography>
+          {/* Add the new button here */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              component={Link}
+              to="/booked-trips"
+              sx={{
+                borderRadius: '25px',
+                padding: '10px 30px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                textTransform: 'none',
+                boxShadow: '0 4px 15px rgba(0, 119, 190, 0.3)',
+                '&:hover': {
+                  backgroundColor: '#005c91',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 6px 20px rgba(0, 119, 190, 0.4)',
+                },
+              }}
+            >
+              View My Booked Trips
+            </Button>
+          </Box>
 
           {/* Form Section with enhanced styling - removed onSubmit */}
           <form>

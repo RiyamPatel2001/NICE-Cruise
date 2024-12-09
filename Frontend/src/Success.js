@@ -61,7 +61,7 @@ const SuccessPage = () => {
             display: 'inline-block'
           }}
         >
-          Trip ID: <strong style={{ color: '#1976d2' }}>{trip_id}</strong>
+          Trip ID: <strong style={{ color: '#1976d2' }}>{selectedCruise.trip_id}</strong>
         </Typography>
       </Box>
 

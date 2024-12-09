@@ -5,7 +5,7 @@ from django.core.cache import cache
 from .models import Item
 from .serializers import ItemSerializer
 from rest_framework import viewsets, permissions
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
@@ -26,6 +26,11 @@ from .serializers import UserSerializer
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
+import json
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -804,9 +809,9 @@ class TripBookingViewSet(viewsets.ViewSet):
 
                         # Create PassengerTrip entry
                         PassengerTrip.objects.create(
-                            trip=trip,
-                            passenger_id=passenger.passenger_id,
-                            group_id=group_id
+                            trip_id=trip,
+                            passenger_id=passenger,
+                            group_id=passenger
                         )
 
                         created_passengers.append({
@@ -887,3 +892,220 @@ class PassengerViewSet(viewsets.ViewSet):
         return Response({'passengers': serializer.data}, status=status.HTTP_200_OK)
 
 
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_booked_trips(request):
+    try:
+        # Find passengers associated with the current user
+        passengers = AroPassenger.objects.filter(user_id=request.user)
+        
+        if not passengers.exists():
+            return Response({
+                'message': 'No passenger profiles found for this user.',
+                'booked_trips': []
+            }, status=status.HTTP_200_OK)
+        
+        # Raw SQL query to get trips with group members
+        from django.db import connection
+        
+        with connection.cursor() as cursor:
+            # Complex query to fetch trips and their group members for the specific user
+            cursor.execute("""
+                SELECT 
+                    t.trip_id, 
+                    t.ship_name, 
+                    t.start_date, 
+                    t.end_date, 
+                    t.start_port, 
+                    t.end_port,
+                    GROUP_CONCAT(
+                        DISTINCT 
+                        JSON_OBJECT(
+                            'passenger_id', p.passenger_id, 
+                            'fname', p.fname, 
+                            'lname', p.lname
+                        )
+                    ) as group_members
+                FROM passenger_trip pt
+                JOIN aro_trip t ON pt.trip_id = t.trip_id
+                JOIN aro_passenger p ON pt.passenger_id = p.passenger_id
+                WHERE pt.passenger_id IN (
+                    SELECT passenger_id 
+                    FROM aro_passenger 
+                    WHERE user_id = %s
+                )
+                GROUP BY t.trip_id
+            """, [request.user.id])
+            
+            # Get column names
+            columns = [col[0] for col in cursor.description]
+            
+            # Convert to dictionaries
+            trips = []
+            for row in cursor.fetchall():
+                trip_dict = dict(zip(columns, row))
+                
+                # Parse group members
+                if trip_dict['group_members']:
+                    try:
+                        trip_dict['group_members'] = json.loads(
+                            f'[{trip_dict["group_members"]}]'
+                        )
+                    except json.JSONDecodeError:
+                        trip_dict['group_members'] = []
+                else:
+                    trip_dict['group_members'] = []
+                
+                trips.append(trip_dict)
+        
+        return Response({
+            'booked_trips': trips
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        print(f"Full Error Traceback:")
+        import traceback
+        traceback.print_exc()
+        
+        return Response({
+            'error': 'An unexpected error occurred',
+            'details': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class BookingPaymentViewSet(viewsets.ViewSet):
+    def generate_unique_random_id(self, model_class, min_value=10000, max_value=99999):
+        """
+        Generate a unique random integer ID
+        """
+        while True:
+            random_id = random.randint(min_value, max_value)
+            if not model_class.objects.filter(pk=random_id).exists():
+                return random_id
+
+    @transaction.atomic
+    def create(self, request):
+        """
+        Comprehensive booking and payment processing
+        """
+        try:
+            # Disable triggers (MySQL specific)
+            with connection.cursor() as cursor:
+                cursor.execute("SET @DISABLE_TRIGGERS = 1;")
+                              
+                booking_id = self.generate_unique_random_id(AroBooking)
+                booking_data = {
+                    'booking_id': booking_id,
+                    'passenger_id': request.data.get('passenger_id'),
+                    'group_id': request.data.get('group_id'),
+                    'booking_cost': request.data.get('total_cost')
+                }
+                booking = AroBooking.objects.create(**booking_data)
+
+                # 2. Invoice Creation with Random ID
+                invoice_id = self.generate_unique_random_id(AroInvoice)
+                invoice_data = {
+                    'invoice_id': invoice_id,
+                    'booking_id': booking,
+                    'issue_date': timezone.now().date(),
+                    'due_date': timezone.now().date() + timezone.timedelta(days=30),
+                    'total_amount': booking_data['booking_cost']
+                }
+                invoice = AroInvoice.objects.create(**invoice_data)
+
+                # 3. Payment Processing with Random ID
+                payment_id = self.generate_unique_random_id(AroPayments)
+                payment_data = {
+                    'payment_id': payment_id,
+                    'invoice_id': invoice,
+                    'trip_id': request.data.get('trip_id'),
+                    'payment_date': timezone.now().date(),
+                    'payment_method': request.data.get('payment_method', 'Credit Card'),
+                    'payment_amount': invoice_data['total_amount'],
+                    'group_id': booking_data['group_id'],
+                    'payment_status': 'Completed'
+                }
+                payment = AroPayments.objects.create(**payment_data)
+
+                # 4. Update Passenger Trip and Package Records
+                self.update_passenger_records(
+                    group_id=booking_data['group_id'], 
+                    trip_id=request.data.get('trip_id')
+                )
+
+                # Manually update invoice total
+                invoice = AroInvoice.objects.get(pk=invoice_id)
+                invoice.total_amount -= payment_data['payment_amount']
+                if invoice.total_amount <= 0:
+                    invoice.payment_status = 'PAID'
+                invoice.save()
+                
+                # Re-enable triggers
+                cursor.execute("SET @DISABLE_TRIGGERS = 0;")
+            
+            return Response({
+                'booking': {
+                    'booking_id': booking_id,
+                    'passenger_id': booking_data['passenger_id'],
+                    'group_id': booking_data['group_id'],
+                    'booking_cost': booking_data['booking_cost']
+                },
+                'invoice': {
+                    'invoice_id': invoice_id,
+                    'total_amount': invoice_data['total_amount']
+                },
+                'payment': {
+                    'payment_id': payment_id,
+                    'payment_method': payment_data['payment_method']
+                }
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            logger.error(f"Payment Processing Error: {e}")
+            return Response({'error': str(e)}, status=400)
+
+    def update_passenger_records(self, group_id, trip_id):
+        """
+        Update PassengerTrip and PassengerPackage records
+        """
+        # Find all passengers in the group
+        passengers = AroPassenger.objects.filter(group_id=group_id)
+
+        # Create PassengerTrip records
+        passenger_trips = [
+            PassengerTrip(
+                trip_id_id=trip_id, 
+                passenger_id_id=passenger.passenger_id,
+                group_id_id=group_id
+            ) for passenger in passengers
+        ]
+        PassengerTrip.objects.bulk_create(passenger_trips)
+
+        # Optional: Update Passenger Packages
+        # passenger_packages = PassengerPackage.objects.filter(group_id=group_id)
+        # passenger_packages.update(trip_id=trip_id)
+
+    @action(detail=False, methods=['GET'])
+    def booking_summary(self, request):
+        """
+        Retrieve booking summary for a specific group
+        """
+        group_id = request.query_params.get('group_id')
+        try:
+            # Fetch the most recent booking for the group
+            booking = AroBooking.objects.filter(group_id=group_id).latest('booking_id')
+            invoice = AroInvoice.objects.get(booking_id=booking)
+            payment = AroPayments.objects.get(invoice_id=invoice)
+
+            return Response({
+                'booking': AroBookingSerializer(booking).data,
+                'invoice': AroInvoiceSerializer(invoice).data,
+                'payment': AroPaymentsSerializer(payment).data
+            })
+        except (AroBooking.DoesNotExist, AroInvoice.DoesNotExist, AroPayments.DoesNotExist) as e:
+            return Response({
+                'error': 'No booking found',
+                'details': str(e)
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        

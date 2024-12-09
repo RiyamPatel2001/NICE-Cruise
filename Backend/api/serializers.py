@@ -77,6 +77,14 @@ class AroTripSerializer(serializers.ModelSerializer):
         model = AroTrip
         fields = '__all__' 
 
+    def get_group_members(self, obj):
+        # Fetch group members for this trip
+        passenger_trips = PassengerTrip.objects.filter(trip_id=obj)
+        members = AroPassenger.objects.filter(
+            passenger_id__in=passenger_trips.values_list('passenger_id', flat=True)
+        )
+        return AroPassengerSerializer(members, many=True).data
+
 class AroEntertainmentsSerializer(serializers.ModelSerializer):
     class Meta:
         model = AroEntertainments
