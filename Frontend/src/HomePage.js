@@ -1,152 +1,342 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import {
+  Box,
+  Button,
+  Container,
+  Grid,
+  Paper,
+  Typography
+} from '@mui/material';
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import CruiseCard from "./CruiseCard";
+import axios from "./api";
 import "./styles.css";
 
-const mockCruises = [
-  {
-    id: 1,
-    destination: "Caribbean",
-    departurePort: "Miami",
-    leavingDate: "2024-12-15",
-    price: 1500,
-    ports: [
-      { day: 1, location: "Miami, Florida", time: "Departs: 3:00 PM" },
-      { day: 2, location: "At Sea", time: "" },
-      {
-        day: 3,
-        location: "Nassau, Bahamas",
-        time: "Docked: 12:30 PM - 8:00 PM",
-      },
-      {
-        day: 4,
-        location: "Perfect Day at CocoCay",
-        time: "Docked: 7:00 AM - 5:00 PM",
-      },
-      { day: 5, location: "At Sea", time: "" },
-      { day: 6, location: "Miami, Florida", time: "Arrival: 6:00 AM" },
-    ],
+// Add this custom style for the form elements
+const filterStyles = {
+  formRow: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '24px',
+    maxWidth: '800px',
+    margin: '0 auto',
+    mb: 3
   },
-  {
-    id: 2,
-    destination: "Mediterranean",
-    departurePort: "Barcelona",
-    leavingDate: "2024-12-20",
-    price: 1800,
-    ports: [
-      { day: 1, location: "Barcelona, Spain", time: "Departs: 5:00 PM" },
-      { day: 2, location: "At Sea", time: "" },
-      { day: 3, location: "Rome, Italy", time: "Docked: 9:00 AM - 6:00 PM" },
-      { day: 4, location: "Naples, Italy", time: "Docked: 7:00 AM - 4:00 PM" },
-      { day: 5, location: "At Sea", time: "" },
-      { day: 6, location: "Barcelona, Spain", time: "Arrival: 7:00 AM" },
-    ],
+  formGroup: {
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px'
   },
-];
+  select: {
+    width: '100%',
+    padding: '12px',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backdropFilter: 'blur(8px)',
+    color: '#1a365d',
+    fontSize: '1rem',
+    fontFamily: "'Montserrat', sans-serif",
+    transition: 'all 0.3s ease',
+    cursor: 'pointer',
+    '&:hover': {
+      backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    },
+    '&:focus': {
+      outline: 'none',
+      borderColor: '#0077BE',
+      boxShadow: '0 0 0 2px rgba(0, 119, 190, 0.2)',
+    }
+  },
+  input: {
+    width: '100%',
+    padding: '12px',
+    borderRadius: '12px',
+    border: '1px solid rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backdropFilter: 'blur(8px)',
+    color: '#1a365d',
+    fontSize: '1rem',
+    fontFamily: "'Montserrat', sans-serif",
+    '&:focus': {
+      outline: 'none',
+      borderColor: '#0077BE',
+      boxShadow: '0 0 0 2px rgba(0, 119, 190, 0.2)',
+    }
+  },
+  submitButton: {
+    padding: '12px 30px',
+    borderRadius: '25px',
+    border: 'none',
+    backgroundColor: '#0077BE',
+    color: 'white',
+    fontSize: '1.1rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    fontFamily: "'Montserrat', sans-serif",
+    boxShadow: '0 4px 15px rgba(0, 119, 190, 0.2)',
+    '&:hover': {
+      backgroundColor: '#005c91',
+      transform: 'translateY(-2px)',
+      boxShadow: '0 6px 20px rgba(0, 119, 190, 0.3)',
+    }
+  }
+};
 
 const HomePage = () => {
+  const [trips, setTrips] = useState([]);
   const [selectedCruise, setSelectedCruise] = useState(null);
   const [expandedCard, setExpandedCard] = useState(null);
   const [departurePort, setDeparturePort] = useState("");
   const [arrivalPort, setArrivalPort] = useState("");
-  const [departureDate, setDepartureDate] = useState(""); // Added departureDate state
+  const [departureDate, setDepartureDate] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  // Filter cruises based on user's input
-  const filteredCruises = mockCruises.filter((cruise) => {
-    const matchesDeparturePort = departurePort
-      ? cruise.departurePort.toLowerCase() === departurePort.toLowerCase()
-      : true;
+  useEffect(() => {
+    const fetchTrips = async () => {
+      try {
+        const params = {
+          start_port: departurePort || undefined,
+          end_port: arrivalPort || undefined,
+          start_date: departureDate || undefined,
+        };
+        const response = await axios.get("/api/trips/", { params });
+        setTrips(response.data);
+        console.log(response.data); 
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching trips:", err);
+        setError("Failed to load trips. Please try again later.");
+        setLoading(false);
+      }
+    };
 
-    const matchesArrivalPort = arrivalPort
-      ? cruise.ports.some((port) =>
-          port.location.toLowerCase().includes(arrivalPort.toLowerCase())
-        )
-      : true;
+    fetchTrips();
+  }, [departurePort, arrivalPort, departureDate]);
 
-    const matchesDepartureDate = departureDate
-      ? new Date(cruise.leavingDate) >= new Date(departureDate)
-      : true;
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          backgroundImage: `url('/background.jpg')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <Typography variant="h5">Loading trips...</Typography>
+      </Box>
+    );
+  }
 
-    return matchesDeparturePort && matchesArrivalPort && matchesDepartureDate;
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (selectedCruise) {
-      navigate("/totalCost", {
-        state: { selectedCruise, cruisePrice: selectedCruise.price },
-      });
-    } else {
-      alert("Please select a cruise before proceeding.");
-    }
-  };
+  if (error) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          backgroundImage: `url('/background.jpg')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <Typography variant="h5" color="error">{error}</Typography>
+      </Box>
+    );
+  }
 
   return (
-    <div className="home-container">
-      <header className="header">
-        <h1>NICE</h1>
-      </header>
-
-      <h2>Select Your Cruise</h2>
-
-      {/* Form Section */}
-      <form onSubmit={handleSubmit}>
-        <div className="form-row">
-          {/* Departure Port */}
-          <div className="form-group">
-            <label>Departure Port:</label>
-            <select
-              value={departurePort}
-              onChange={(e) => setDeparturePort(e.target.value)}
+    <Box
+      sx={{
+        minHeight: '100vh',
+        backgroundImage: `url('/background.jpg')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        pt: 4,
+        pb: 6,
+        fontFamily: "'Montserrat', sans-serif", // Add default font family
+      }}
+    >
+      <Container maxWidth="lg">
+        <Paper
+          elevation={3}
+          sx={{
+            p: 4,
+            mb: 4,
+            backgroundColor: 'rgba(255, 255, 255, 0.25)',
+            backdropFilter: 'blur(8px)',
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+          }}
+        >
+          <Typography 
+            variant="h2" 
+            component="h1" 
+            align="center"
+            sx={{
+              color: '#0077BE',
+              fontWeight: 700,
+              mb: 1,
+              textShadow: '2px 2px 4px rgba(0,0,0,0.1)',
+              fontFamily: "'Playfair Display', serif", // Elegant serif font for main title
+              letterSpacing: '-0.5px'
+            }}
+          >
+            NICE
+          </Typography>
+          <Typography 
+            variant="h4" 
+            align="center"
+            sx={{ 
+              mb: 4,
+              color: '#1a365d',
+              fontWeight: 500,
+              fontFamily: "'Montserrat', sans-serif",
+              fontSize: '2rem',
+              letterSpacing: '0.5px'
+            }}
+          >
+            Select Your Cruise
+          </Typography>
+          {/* Add the new button here */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              component={Link}
+              to="/booked-trips"
+              sx={{
+                borderRadius: '25px',
+                padding: '10px 30px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                textTransform: 'none',
+                boxShadow: '0 4px 15px rgba(0, 119, 190, 0.3)',
+                '&:hover': {
+                  backgroundColor: '#005c91',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 6px 20px rgba(0, 119, 190, 0.4)',
+                },
+              }}
             >
-              <option value="">Any</option>
-              <option value="Miami">Miami</option>
-              <option value="Barcelona">Barcelona</option>
-              <option value="Seattle">Seattle</option>
-            </select>
-          </div>
+              View My Booked Trips
+            </Button>
+          </Box>
 
-          {/* Arrival Port */}
-          <div className="form-group">
-            <label>Arrival Port:</label>
-            <input
-              type="text"
-              placeholder="Search Arrival Port"
-              value={arrivalPort}
-              onChange={(e) => setArrivalPort(e.target.value)}
-            />
-          </div>
+          {/* Form Section with enhanced styling - removed onSubmit */}
+          <form>
+            <Box sx={filterStyles.formRow}>
+              <Box sx={filterStyles.formGroup}>
+                <Typography 
+                  component="label"
+                  sx={{ 
+                    display: 'block',
+                    mb: 1,
+                    color: '#1a365d',
+                    fontWeight: 600,
+                    fontSize: '0.95rem'
+                  }}
+                >
+                  Departure Port
+                </Typography>
+                <select
+                  value={departurePort}
+                  onChange={(e) => setDeparturePort(e.target.value)}
+                  style={filterStyles.select}
+                >
+                  <option value="">Any</option>
+                  {Array.from(new Set(trips.map((trip) => trip.start_port))).map(
+                    (port) => (
+                      <option key={port} value={port}>
+                        {port}
+                      </option>
+                    )
+                  )}
+                </select>
+              </Box>
 
-          {/* Departure Date */}
-          <div className="form-group">
-            <label>Departure Date:</label>
-            <input
-              type="date"
-              value={departureDate}
-              onChange={(e) => setDepartureDate(e.target.value)}
-            />
-          </div>
-        </div>
-        <button type="submit" className="submit-button">
-          Proceed to Total Cost
-        </button>
-      </form>
+              <Box sx={filterStyles.formGroup}>
+                <Typography 
+                  component="label"
+                  sx={{ 
+                    display: 'block',
+                    mb: 1,
+                    color: '#1a365d',
+                    fontWeight: 600,
+                    fontSize: '0.95rem'
+                  }}
+                >
+                  Arrival Port
+                </Typography>
+                <input
+                  type="text"
+                  placeholder="Search Arrival Port"
+                  value={arrivalPort}
+                  onChange={(e) => setArrivalPort(e.target.value)}
+                  style={filterStyles.input}
+                />
+              </Box>
 
-      {/* Cruise Cards Section */}
-      <div className="cruise-cards">
-        {filteredCruises.map((cruise) => (
-          <CruiseCard
-            key={cruise.id}
-            cruise={cruise}
-            selectedCruise={selectedCruise}
-            setSelectedCruise={setSelectedCruise}
-            expandedCard={expandedCard}
-            setExpandedCard={setExpandedCard}
-          />
-        ))}
-      </div>
-    </div>
+              <Box sx={filterStyles.formGroup}>
+                <Typography 
+                  component="label"
+                  sx={{ 
+                    display: 'block',
+                    mb: 1,
+                    color: '#1a365d',
+                    fontWeight: 600,
+                    fontSize: '0.95rem'
+                  }}
+                >
+                  Departure Date
+                </Typography>
+                <input
+                  type="date"
+                  value={departureDate}
+                  onChange={(e) => setDepartureDate(e.target.value)}
+                  style={filterStyles.input}
+                />
+              </Box>
+            </Box>
+          </form>
+        </Paper>
+
+        {/* Cruise Cards Section */}
+        <Grid 
+          container 
+          spacing={3} 
+          justifyContent="center"
+          sx={{ 
+            maxWidth: '900px',
+            margin: '0 auto'
+          }}
+        >
+          {trips.map((trip) => (
+            <Grid item xs={12} key={trip.trip_id}>
+              <CruiseCard
+                cruise={trip}
+                selectedCruise={selectedCruise}
+                setSelectedCruise={setSelectedCruise}
+                expandedCard={expandedCard}
+                setExpandedCard={setExpandedCard}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+    </Box>
   );
 };
 

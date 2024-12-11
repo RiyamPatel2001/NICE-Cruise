@@ -7,6 +7,8 @@
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.db import models
 from django.contrib.auth.models import User
+from django.conf import settings
+
 
 class Item(models.Model):
     # Define your fields here
@@ -36,13 +38,13 @@ class AroAddress(models.Model):
 
 
 class AroBooking(models.Model):
-    booking_id = models.AutoField(primary_key=True)
+    booking_id = models.IntegerField(primary_key=True)
     passenger_id = models.IntegerField()
     group_id = models.IntegerField()
     booking_cost = models.DecimalField(max_digits=10, decimal_places=2)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'aro_booking'
         db_table_comment = 'PRIMARY KEY OF THE BOOKING TABLE'
 
@@ -61,14 +63,19 @@ class AroEntertainments(models.Model):
 
 
 class AroInvoice(models.Model):
-    invoice_id = models.AutoField(primary_key=True)
-    booking_id = models.ForeignKey(AroBooking, models.DO_NOTHING)
+    invoice_id = models.IntegerField(primary_key=True)
+    booking_id = models.ForeignKey(AroBooking, models.DO_NOTHING, db_column='booking_id')
     issue_date = models.DateField()
     due_date = models.DateField()
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
 
+    def update_payment_status(self):
+        if self.total_amount <= 0:
+            self.payment_status = 'PAID'
+            self.save()
+
     class Meta:
-        managed = False
+        managed = True
         db_table = 'aro_invoice'
         db_table_comment = 'PRIMARY KEY OF THE INVOICE TABLE'
 
@@ -95,9 +102,9 @@ class AroPassenger(models.Model):
     age = models.IntegerField()
     email = models.CharField(max_length=30)
     phone = models.CharField(max_length=20)
-    address = models.ForeignKey(AroAddress, models.DO_NOTHING, db_column='address_id')
+    address = models.ForeignKey(AroAddress, models.DO_NOTHING, db_column='address_id', null=True, blank=True)
     nationality = models.CharField(max_length=30)
-    room_number = models.ForeignKey('AroRooms', models.DO_NOTHING, db_column='room_number')
+    room_number = models.ForeignKey('AroRooms', models.DO_NOTHING, db_column='room_number', null=True, blank=True)
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, db_column='user_id')
 
     class Meta:
@@ -108,14 +115,26 @@ class AroPassenger(models.Model):
 
 
 class AroPayments(models.Model):
-    payment_id = models.AutoField(primary_key=True)
-    invoice_id= models.ForeignKey(AroInvoice, models.DO_NOTHING)
+    payment_id = models.IntegerField(primary_key=True)
+    invoice_id = models.ForeignKey('AroInvoice', 
+        on_delete=models.CASCADE, 
+        db_column='invoice_id',
+        to_field='invoice_id'
+    )
     trip_id = models.IntegerField()
     payment_date = models.DateField()
     payment_method = models.CharField(max_length=30)
     payment_amount = models.DecimalField(max_digits=10, decimal_places=2)
     group_id = models.IntegerField()
     payment_status = models.CharField(max_length=10)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        
+        # Update invoice total and status
+        invoice = self.invoice_id
+        invoice.total_amount -= self.payment_amount
+        invoice.update_payment_status()
 
     class Meta:
         managed = False
@@ -200,9 +219,9 @@ class EntertainmentTrip(models.Model):
 
 class PassengerPackage(models.Model):
     id = models.AutoField(primary_key=True)
-    package_id = models.ForeignKey(AroPackages, models.DO_NOTHING)
-    group_id = models.IntegerField()
-    passenger_id = models.IntegerField()
+    package = models.ForeignKey(AroPackages, models.DO_NOTHING, db_column='package_id')
+    group = models.ForeignKey(AroPassenger, models.DO_NOTHING, db_column='group_id', related_name='passenger_package_groups')
+    passenger_id = models.ForeignKey(AroPassenger, models.DO_NOTHING, db_column='passenger_id', related_name='passenger_package_passengers')
 
     class Meta:
         managed = False
@@ -218,18 +237,38 @@ class PassengerPackage(models.Model):
 
 
 class PassengerTrip(models.Model):
-    passenger_id = models.IntegerField()
-    trip = models.ForeignKey(AroTrip, on_delete=models.DO_NOTHING, db_column='trip_id') 
-    group_id = models.IntegerField()
+    trip_id = models.ForeignKey(
+        AroTrip, 
+        on_delete=models.CASCADE, 
+        db_column='trip_id',
+        to_field='trip_id',
+        null=True,
+        blank=True
+    )
+    passenger_id = models.ForeignKey(
+        AroPassenger, 
+        on_delete=models.CASCADE, 
+        db_column='passenger_id',
+        to_field='passenger_id',
+        related_name='trip_passengers'
+    )
+    group_id = models.ForeignKey(
+        AroPassenger, 
+        on_delete=models.CASCADE, 
+        db_column='group_id',
+        to_field='passenger_id',
+        related_name='trip_groups'
+    )
 
     class Meta:
-        managed = True
+        managed = False  # Tell Django not to manage this table
         db_table = 'passenger_trip'
-        unique_together = (('trip', 'passenger_id', 'group_id'),)
+        unique_together = ['trip_id', 'passenger_id', 'group_id']
 
-    @property
-    def passenger(self):
-        return AroPassenger.objects.get(passenger_id=self.passenger_id, group_id=self.group_id)
+    # Custom primary key method
+    def get_primary_key(self):
+        return (self.trip_id_id, self.passenger_id_id, self.group_id_id)
+
 
 
 class RestaurantsTrip(models.Model):
@@ -266,3 +305,4 @@ class TripPort(models.Model):
         db_table = 'trip_port'
         unique_together = (('port_id', 'trip_id'),)
         db_table_comment = 'Trip Port Table'
+
