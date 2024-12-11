@@ -1,21 +1,21 @@
 import {
-    CalendarMonth as CalendarIcon,
-    Group as GroupIcon,
-    LocationOn as LocationIcon,
-    TravelExplore as TravelIcon
+  CalendarMonth as CalendarIcon,
+  Group as GroupIcon,
+  LocationOn as LocationIcon,
+  TravelExplore as TravelIcon
 } from '@mui/icons-material';
 import {
-    Avatar,
-    Box,
-    Card,
-    CardContent,
-    Chip,
-    CircularProgress,
-    Container,
-    Divider,
-    Grid,
-    Paper,
-    Typography
+  Avatar,
+  Box,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Container,
+  Divider,
+  Grid,
+  Paper,
+  Typography
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import axios from './api';
@@ -163,13 +163,13 @@ const BookedTrips = () => {
                     </Grid>
 
                     {/* Group Members Section */}
-                    <Box sx={{ mt: 3 }}>
+                    <Box sx={{ mt: 3 }}>∫
                       <Typography 
                         variant="subtitle1" 
                         color="text.secondary" 
                         sx={{ display: 'flex', alignItems: 'center' }}
                       >
-                        <GroupIcon sx={{ mr: 1 }} /> Group Members
+                        <GroupIcon sx={{ mr: 1 }} /> Booked Passenger
                       </Typography>
                       <Divider sx={{ mb: 2 }} />
                       {trip.group_members && trip.group_members.length > 0 ? (

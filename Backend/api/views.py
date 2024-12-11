@@ -28,10 +28,6 @@ from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 import json
 
-import logging
-
-logger = logging.getLogger(__name__)
-
 
 
 from .models import (
@@ -989,60 +985,49 @@ class BookingPaymentViewSet(viewsets.ViewSet):
         Comprehensive booking and payment processing
         """
         try:
-            # Disable triggers (MySQL specific)
-            with connection.cursor() as cursor:
-                cursor.execute("SET @DISABLE_TRIGGERS = 1;")
-                              
-                booking_id = self.generate_unique_random_id(AroBooking)
-                booking_data = {
-                    'booking_id': booking_id,
-                    'passenger_id': request.data.get('passenger_id'),
-                    'group_id': request.data.get('group_id'),
-                    'booking_cost': request.data.get('total_cost')
-                }
-                booking = AroBooking.objects.create(**booking_data)
-
-                # 2. Invoice Creation with Random ID
-                invoice_id = self.generate_unique_random_id(AroInvoice)
-                invoice_data = {
-                    'invoice_id': invoice_id,
-                    'booking_id': booking,
-                    'issue_date': timezone.now().date(),
-                    'due_date': timezone.now().date() + timezone.timedelta(days=30),
-                    'total_amount': booking_data['booking_cost']
-                }
-                invoice = AroInvoice.objects.create(**invoice_data)
-
-                # 3. Payment Processing with Random ID
-                payment_id = self.generate_unique_random_id(AroPayments)
-                payment_data = {
-                    'payment_id': payment_id,
-                    'invoice_id': invoice,
-                    'trip_id': request.data.get('trip_id'),
-                    'payment_date': timezone.now().date(),
-                    'payment_method': request.data.get('payment_method', 'Credit Card'),
-                    'payment_amount': invoice_data['total_amount'],
-                    'group_id': booking_data['group_id'],
-                    'payment_status': 'Completed'
-                }
-                payment = AroPayments.objects.create(**payment_data)
-
-                # 4. Update Passenger Trip and Package Records
-                self.update_passenger_records(
-                    group_id=booking_data['group_id'], 
-                    trip_id=request.data.get('trip_id')
-                )
-
-                # Manually update invoice total
-                invoice = AroInvoice.objects.get(pk=invoice_id)
-                invoice.total_amount -= payment_data['payment_amount']
-                if invoice.total_amount <= 0:
-                    invoice.payment_status = 'PAID'
-                invoice.save()
-                
-                # Re-enable triggers
-                cursor.execute("SET @DISABLE_TRIGGERS = 0;")
+            # 1. Booking Creation with Random ID
             
+            booking_id = self.generate_unique_random_id(AroBooking)
+            booking_data = {
+                'booking_id': booking_id,
+                'passenger_id': request.data.get('passenger_id'),
+                'group_id': request.data.get('group_id'),
+                'booking_cost': request.data.get('total_cost')
+            }
+            booking = AroBooking.objects.create(**booking_data)
+
+            # 2. Invoice Creation with Random ID
+            invoice_id = self.generate_unique_random_id(AroInvoice)
+            invoice_data = {
+                'invoice_id': invoice_id,
+                'booking_id': booking,
+                'issue_date': timezone.now().date(),
+                'due_date': timezone.now().date() + timezone.timedelta(days=30),
+                'total_amount': booking_data['booking_cost']
+            }
+            invoice = AroInvoice.objects.create(**invoice_data)
+
+            # 3. Payment Processing with Random ID
+            payment_id = self.generate_unique_random_id(AroPayments)
+            payment_data = {
+                'payment_id': payment_id,
+                'invoice_id': invoice,
+                'trip_id': request.data.get('trip_id'),
+                'payment_date': timezone.now().date(),
+                'payment_method': request.data.get('payment_method', 'Credit Card'),
+                'payment_amount': invoice_data['total_amount'],
+                'group_id': booking_data['group_id'],
+                'payment_status': 'Completed'
+            }
+            payment = AroPayments.objects.create(**payment_data)
+
+            # 4. Update Passenger Trip and Package Records
+            self.update_passenger_records(
+                group_id=booking_data['group_id'], 
+                trip_id=request.data.get('trip_id')
+            )
+
+            # Prepare response
             return Response({
                 'booking': {
                     'booking_id': booking_id,
@@ -1061,8 +1046,10 @@ class BookingPaymentViewSet(viewsets.ViewSet):
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            logger.error(f"Payment Processing Error: {e}")
-            return Response({'error': str(e)}, status=400)
+            return Response({
+                'error': str(e),
+                'details': repr(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
 
     def update_passenger_records(self, group_id, trip_id):
         """

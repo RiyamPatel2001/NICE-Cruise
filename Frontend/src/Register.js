@@ -18,20 +18,77 @@ const Register = () => {
     confirm_password: "",
   });
 
+  const [errors, setErrors] = useState({
+    email: null,
+    password: null,
+    confirm_password: null,
+  });
+
   const navigate = useNavigate();
   const { email, password, confirm_password } = formData;
 
-  const onChange = (e) =>
-    setFormData({ 
-      ...formData, 
-      [e.target.name]: e.target.value 
-    });
+  const validatePassword = (password) => {
+    let errors = [];
+
+    if (password.length < 8) {
+      errors.push("At least 8 characters.");
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push("One uppercase letter.");
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push("One lowercase letter.");
+    }
+    if (!/\d/.test(password)) {
+      errors.push("One digit.");
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      errors.push("One special character (!@#$%^&*(),.?\":{}|<>).");
+    }
+    
+    return errors;
+  };
+
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+
+    // Client-side password validation
+    if (name === 'password') {
+      const passwordErrors = validatePassword(value);
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        password: passwordErrors.length > 0 ? passwordErrors.join(' ') : null,
+      }));
+    }
+    // Validate confirm password
+    else if (name === 'confirm_password') {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        confirm_password: value !== formData.password ? "Passwords do not match" : null,
+      }));
+    } else {
+      // Clear specific field errors when user starts typing
+      setErrors((prevErrors) => ({ ...prevErrors, [name]: null }));
+    }
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
 
+    // Reset errors
+    setErrors({
+      email: null,
+      password: null,
+      confirm_password: null,
+    });
+
+    // Client-side validation before submission
     if (password !== confirm_password) {
-      alert("Passwords do not match");
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        confirm_password: "Passwords do not match",
+      }));
       return;
     }
 
@@ -39,11 +96,28 @@ const Register = () => {
 
     try {
       await axios.post("/api/register/", newUser);
+      const loginResponse = await axios.post("/api/login/", {
+        username: email,
+        password: password,
+      });
+      const token = loginResponse.data.token;
+      localStorage.setItem('token', token);
       alert("Registration successful");
       navigate("/home");
     } catch (err) {
-      console.error(err.response?.data || err.message);
-      alert("Error registering user");
+      // Handle backend validation errors
+      if (err.response && err.response.data) {
+        const backendErrors = err.response.data;
+
+        // Map backend errors to the errors state
+        setErrors((prevErrors) => ({
+          ...prevErrors,
+          ...backendErrors,
+        }));
+      } else {
+        console.error(err.response?.data || err.message);
+        alert("Error registering user");
+      }
     }
   };
 
@@ -123,6 +197,8 @@ const Register = () => {
               onChange={onChange}
               required
               variant="outlined"
+              error={!!errors.email}
+              helperText={errors.email}
             />
 
             <TextField
@@ -134,6 +210,8 @@ const Register = () => {
               onChange={onChange}
               required
               variant="outlined"
+              error={!!errors.password}
+              helperText={errors.password}
             />
 
             <TextField
@@ -145,6 +223,8 @@ const Register = () => {
               onChange={onChange}
               required
               variant="outlined"
+              error={!!errors.confirm_password}
+              helperText={errors.confirm_password}
             />
 
             <Button
