@@ -100,9 +100,6 @@ Contributions are welcome! Please follow these steps:
 3.  Implement your changes.
 4.  Submit a pull request.
 
-## License
-
-[Specify the license under which the project is released]
 
 ## Acknowledgments
 
