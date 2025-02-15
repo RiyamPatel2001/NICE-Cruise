@@ -82,4 +82,31 @@ Stored procedures and functions were created.
     *   Configure the database connection settings.
 4.  Set up the frontend:
 
-    *   Navigate to the
+    *   Navigate to the `Frontend` directory.
+    *   Open the `index.html` file in your web browser.
+
+## Usage
+
+1.  Start the backend server.
+2.  Access the web application through your browser.
+3.  Use the interface to manage cruises, bookings, and customer data.
+
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1.  Fork the repository.
+2.  Create a new branch for your feature or bug fix.
+3.  Implement your changes.
+4.  Submit a pull request.
+
+## License
+
+[Specify the license under which the project is released]
+
+## Acknowledgments
+
+*   Oliver Leng
+*   Alex Gongalez
+
+
