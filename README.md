@@ -103,7 +103,8 @@ Contributions are welcome! Please follow these steps:
 
 ## Acknowledgments
 
-*   Oliver Leng
-*   Alex Gongalez
+OliverLengLLL Xinhai Leng
+*   Oliver Leng - @Adgonzalez2018
+*   Alex Gongalez - @Adgonzalez2018 
 
 
